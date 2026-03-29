@@ -1,0 +1,412 @@
+@page "/contact"
+@using ToyStore.Frontend.Services
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject CartService CartService
+
+<div class="container mt-5 mb-5">
+    <!-- Səhifə Başlığı -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h1 class="display-4 fw-bold text-center mb-2">Bizə Yazın 💬</h1>
+            <p class="text-center text-muted lead">Hər zaman sizə kömək etməyə hazırıq</p>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- İletişim Formu -->
+        <div class="col-md-8 mb-5">
+            <div class="card shadow-sm border-0 p-4">
+                <h2 class="fw-bold mb-4">📝 Mesaj Göndərin</h2>
+
+                @if (showSuccessMessage)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        <strong>✅ Uğurlu!</strong> Mesajınız alındı. Biz sizə 24 saat ərzində cavab verəcəyik.
+                        <button type="button" class="btn-close" @onclick='() => showSuccessMessage = false'></button>
+                    </div>
+                }
+
+                @if (showErrorMessage)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        <strong>❌ Xəta!</strong> Lütfən, bütün alanları doldurun.
+                        <button type="button" class="btn-close" @onclick='() => showErrorMessage = false'></button>
+                    </div>
+                }
+
+                <form @onsubmit="SubmitForm">
+                    <!-- Ad -->
+                    <div class="mb-3">
+                        <label for="fullName" class="form-label fw-bold">Adınız *</label>
+                        <input type="text" class="form-control" id="fullName" placeholder="Adınızı daxil edin" 
+                               @bind="contactForm.FullName" required />
+                    </div>
+
+                    <!-- Email -->
+                    <div class="mb-3">
+                        <label for="email" class="form-label fw-bold">Email Ünvanı *</label>
+                        <input type="email" class="form-control" id="email" placeholder="example@email.com" 
+                               @bind="contactForm.Email" required />
+                    </div>
+
+                    <!-- Telefon -->
+                    <div class="mb-3">
+                        <label for="phone" class="form-label fw-bold">Telefon Nömrəsi</label>
+                        <input type="tel" class="form-control" id="phone" placeholder="+994 50 123 4567" 
+                               @bind="contactForm.Phone" />
+                    </div>
+
+                    <!-- Konu -->
+                    <div class="mb-3">
+                        <label for="subject" class="form-label fw-bold">Məsul *</label>
+                        <select class="form-select" id="subject" @bind="contactForm.Subject" required>
+                            <option value="">-- Məsul seçin --</option>
+                            <option value="product">📦 Məhsul Haqqında</option>
+                            <option value="order">🛒 Sifariş Haqqında</option>
+                            <option value="delivery">🚚 Çatdırılma Haqqında</option>
+                            <option value="complaint">😞 Şikayət</option>
+                            <option value="suggestion">💡 Təklif</option>
+                            <option value="partnership">🤝 Ortaqlıq</option>
+                            <option value="other">📌 Digər</option>
+                        </select>
+                    </div>
+
+                    <!-- Mesaj -->
+                    <div class="mb-3">
+                        <label for="message" class="form-label fw-bold">Mesajınız *</label>
+                        <textarea class="form-control" id="message" rows="6" placeholder="Mesajınızı yazın..." 
+                                  @bind="contactForm.Message" required></textarea>
+                        <small class="text-muted">Ən az 10 simvol, ən çox 1000 simvol</small>
+                    </div>
+
+                    <!-- Razılık -->
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="agreement" 
+                               @bind="contactForm.AgreeToTerms" required />
+                        <label class="form-check-label" for="agreement">
+                            Mənim şəxsi məlumatlarımın işlənməsinə razılıq verirəm *
+                        </label>
+                    </div>
+
+                    <!-- Submit Düyməsi -->
+                    <button type="submit" class="btn btn-primary btn-lg w-100" disabled="@isSubmitting">
+                        @(isSubmitting ? "Göndərilir..." : "📤 Mesajı Göndər")
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Kontakt Bilgileri -->
+        <div class="col-md-4 mb-5">
+            <!-- Telefon -->
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">☎️ Telefon</h5>
+                    <p class="text-secondary mb-1">
+                        <strong>Satış:</strong><br/>
+                        <a href="tel:+994125121234" class="text-decoration-none">+994 12 512 1234</a>
+                    </p>
+                    <p class="text-secondary mb-1">
+                        <strong>Dəstək:</strong><br/>
+                        <a href="tel:+994125125678" class="text-decoration-none">+994 12 512 5678</a>
+                    </p>
+                    <p class="text-secondary">
+                        <strong>24/7 Xətti:</strong><br/>
+                        <a href="tel:1888869786873" class="text-decoration-none">1888-TOY-STORE</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Email -->
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">✉️ Email</h5>
+                    <p class="text-secondary mb-1">
+                        <strong>Ümumi:</strong><br/>
+                        <a href="mailto:info@toystore.az" class="text-decoration-none">info@toystore.az</a>
+                    </p>
+                    <p class="text-secondary mb-1">
+                        <strong>Dəstək:</strong><br/>
+                        <a href="mailto:support@toystore.az" class="text-decoration-none">support@toystore.az</a>
+                    </p>
+                    <p class="text-secondary">
+                        <strong>Şikayətlər:</strong><br/>
+                        <a href="mailto:complaints@toystore.az" class="text-decoration-none">complaints@toystore.az</a>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Ünvan -->
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">📍 Ünvanımız</h5>
+                    <p class="text-secondary mb-0">
+                        Bakı şəhəri, Nizami rayon<br/>
+                        28 May küçəsi, №45<br/>
+                        AZ1000, Azərbaycam Respublikası
+                    </p>
+                </div>
+            </div>
+
+            <!-- İş Saatları -->
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h5 class="fw-bold mb-3">⏰ İş Saatları</h5>
+                    <p class="text-secondary mb-1">
+                        <strong>Haftaiçi:</strong> 08:00 - 20:00
+                    </p>
+                    <p class="text-secondary mb-1">
+                        <strong>Şənbə:</strong> 09:00 - 19:00
+                    </p>
+                    <p class="text-secondary mb-1">
+                        <strong>Bazar:</strong> 10:00 - 18:00
+                    </p>
+                    <p class="text-secondary">
+                        <strong>Bayram Günləri:</strong> 11:00 - 17:00
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Harita (Placeholder) -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h2 class="fw-bold mb-4">🗺️ Bizim Yerləşkəmiz</h2>
+            <img src="https://via.placeholder.com/1000x400?text=Google+Maps+-+Bakı+Ofisi" 
+                 class="img-fluid rounded shadow-sm" alt="Harita" />
+        </div>
+    </div>
+
+    <!-- SSS Bölümü -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h2 class="fw-bold mb-4 text-center">❓ Sık Sorulan Suallar</h2>
+        </div>
+
+        <div class="col-md-12">
+            <!-- Sual 1 -->
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-header bg-light p-3">
+                    <button class="btn btn-link text-start w-100 text-decoration-none fw-bold" 
+                            @onclick='() => ToggleFaq(0)'>
+                        @(showFaq[0] ? "➖" : "➕") Sifariş verəndən sonra nə etməliyəm?
+                    </button>
+                </div>
+                @if (showFaq[0])
+                {
+                    <div class="card-body">
+                        <p class="text-secondary">
+                            Sifariş verdikdən sonra sizə təsdiq e-postası göndərəcəyik. Bütün məlumatları bu e-postadan 
+                            görmək ola biləcəkdir. Çatdırılma başladan qədər sifariş məlumatlarını izləyə biləcəksiniz.
+                        </p>
+                    </div>
+                }
+            </div>
+
+            <!-- Sual 2 -->
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-header bg-light p-3">
+                    <button class="btn btn-link text-start w-100 text-decoration-none fw-bold" 
+                            @onclick='() => ToggleFaq(1)'>
+                        @(showFaq[1] ? "➖" : "➕") Sifariş iadesini necə edə bilərim?
+                    </button>
+                </div>
+                @if (showFaq[1])
+                {
+                    <div class="card-body">
+                        <p class="text-secondary">
+                            Sifariş aldıqdan sonra 30 gün ərzində qaytarma hüququna maliksiniz. Sadəcə bizə 
+                            +994 12 512 5678 nömrəsinə zəng edin və qaytarma prosesi başlayacaq. Heç bir sual 
+                            soruşulmayacaq!
+                        </p>
+                    </div>
+                }
+            </div>
+
+            <!-- Sual 3 -->
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-header bg-light p-3">
+                    <button class="btn btn-link text-start w-100 text-decoration-none fw-bold" 
+                            @onclick='() => ToggleFaq(2)'>
+                        @(showFaq[2] ? "➖" : "➕") Bakı dışı çatdırılma var mı?
+                    </button>
+                </div>
+                @if (showFaq[2])
+                {
+                    <div class="card-body">
+                        <p class="text-secondary">
+                            Evet! Biz bütün Azərbaycana çatdırılma yapıyoruz. Bakı dışına gelen siparişler 3-5 gün 
+                            içinde ulaştırılır. Kargo ücretleri sipariş tutarına göre değişmektedir.
+                        </p>
+                    </div>
+                }
+            </div>
+
+            <!-- Sual 4 -->
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-header bg-light p-3">
+                    <button class="btn btn-link text-start w-100 text-decoration-none fw-bold" 
+                            @onclick='() => ToggleFaq(3)'>
+                        @(showFaq[3] ? "➖" : "➕") Hangi ödeme yöntemleri kabul edilir?
+                    </button>
+                </div>
+                @if (showFaq[3])
+                {
+                    <div class="card-body">
+                        <p class="text-secondary">
+                            Kredi kartı, banka transferi, PayPal, Apple Pay, Google Pay ve kapıda ödeme gibi 
+                            birçok ödeme yöntemi kabul ediyoruz. Seçim sizin! Bütün işlemlər SSL şifreleme ile 
+                            korunur.
+                        </p>
+                    </div>
+                }
+            </div>
+
+            <!-- Sual 5 -->
+            <div class="card shadow-sm border-0 mb-3">
+                <div class="card-header bg-light p-3">
+                    <button class="btn btn-link text-start w-100 text-decoration-none fw-bold" 
+                            @onclick='() => ToggleFaq(4)'>
+                        @(showFaq[4] ? "➖" : "➕") Məhsullar orijinal mi?
+                    </button>
+                </div>
+                @if (showFaq[4])
+                {
+                    <div class="card-body">
+                        <p class="text-secondary">
+                            Tamamıyla! Bütün ürünlerimiz resmi distribütörlerden satın alınır ve orijinalliği 
+                            teyit edilir. Taklit ürün satıyoruz değildir. Hattı, ürün garantisi ve teknik desteği 
+                            sizin haklarınızdır.
+                        </p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Başka Suallar -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="card bg-info bg-opacity-10 border-0 shadow-sm p-5">
+                <div class="text-center">
+                    <h3 class="fw-bold mb-3">🤔 Sualınız bulunmasa?</h3>
+                    <p class="text-secondary mb-4">
+                        Yukarıdaki formu kullanarak mesaj gönderin. 24 saat içinde yanıt alacaksınız!
+                    </p>
+                    <button class="btn btn-primary btn-lg" @onclick='() => ScrollToForm()'>
+                        ⬆️ Forma Git
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: all 0.3s ease;
+        border-radius: 10px;
+    }
+
+    .card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+
+    .form-control, .form-select {
+        border-radius: 8px;
+        border: 1px solid #ddd;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+
+    .btn-link {
+        color: #2d3748 !important;
+        transition: all 0.2s ease;
+    }
+
+    .btn-link:hover {
+        color: #667eea !important;
+    }
+</style>
+
+@code {
+    private ContactFormModel contactForm = new();
+    private bool showSuccessMessage = false;
+    private bool showErrorMessage = false;
+    private bool isSubmitting = false;
+    private bool[] showFaq = new bool[5];
+
+    private void ToggleFaq(int index)
+    {
+        showFaq[index] = !showFaq[index];
+    }
+
+    private async Task SubmitForm()
+    {
+        // Validasyon
+        if (string.IsNullOrWhiteSpace(contactForm.FullName) ||
+            string.IsNullOrWhiteSpace(contactForm.Email) ||
+            string.IsNullOrWhiteSpace(contactForm.Subject) ||
+            string.IsNullOrWhiteSpace(contactForm.Message) ||
+            !contactForm.AgreeToTerms)
+        {
+            showErrorMessage = true;
+            return;
+        }
+
+        if (contactForm.Message.Length < 10 || contactForm.Message.Length > 1000)
+        {
+            showErrorMessage = true;
+            return;
+        }
+
+        isSubmitting = true;
+
+        try
+        {
+            // Backend'e mesaj göndərmənin əvəzinə, console'a log yazabiliriz
+            // Gerçek projede bu bir API endpoint'ine POST olurdu
+            Console.WriteLine($"Mesaj alındı: {contactForm.FullName} - {contactForm.Email}");
+
+            // Formu sıfırla
+            contactForm = new();
+            showErrorMessage = false;
+            showSuccessMessage = true;
+
+            // 5 saniye sonra mesaj mesajını gizle
+            await Task.Delay(5000);
+            showSuccessMessage = false;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Xəta: {ex.Message}");
+            showErrorMessage = true;
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+
+    private void ScrollToForm()
+    {
+        // Bu basit bir çözüm. Gerçek projede JavaScript kullanılabilir
+        // document.querySelector(".card").scrollIntoView({ behavior: 'smooth' });
+    }
+
+    public class ContactFormModel
+    {
+        public string FullName { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Phone { get; set; } = "";
+        public string Subject { get; set; } = "";
+        public string Message { get; set; } = "";
+        public bool AgreeToTerms { get; set; } = false;
+    }
+}

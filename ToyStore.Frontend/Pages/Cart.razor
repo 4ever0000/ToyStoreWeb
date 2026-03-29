@@ -1,0 +1,111 @@
+﻿@page "/cart"
+@using ToyStore.Frontend.Services
+@using ToyStore.Frontend.Models
+@inject CartService CartService
+@inject HttpClient Http
+@inject NavigationManager NavManager
+
+<div class="container mt-4">
+    <h2 class="fw-bold mb-4">🛒 Səbətim (Database)</h2>
+
+    @if (CartService.SelectedItems.Count == 0)
+    {
+        <div class="alert alert-info text-center py-5">Səbətiniz boşdur.</div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-md-8">
+                @foreach (var item in CartService.SelectedItems)
+                {
+                    <div class="card mb-3 p-3 shadow-sm border-0">
+                        <div class="d-flex align-items-center">
+                            <img src="@item.ImageUrl" style="width: 60px;" class="me-3" />
+                            <div class="flex-grow-1">
+                                <h6 class="mb-0">@item.ProductName</h6>
+                                <p class="mb-0 text-success">@item.Price AZN</p>
+                            </div>
+                            
+                            <!-- Sayı Artır/Azalt -->
+                            <div class="d-flex align-items-center me-3">
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => UpdateDbQuantity(item, -1)">-</button>
+                                <span class="mx-2 fw-bold">@item.Quantity</span>
+                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => UpdateDbQuantity(item, 1)">+</button>
+                            </div>
+
+                            <button class="btn btn-sm btn-danger" @onclick="() => RemoveFromDb(item.ProductId)">🗑️</button>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="col-md-4">
+                <div class="card p-4 bg-light shadow-sm">
+                    <h5>Sifarişin Tamamlanması</h5>
+                    <hr />
+                    <div class="mb-3">
+                        <label>Çatdırılma Ünvanı:</label>
+                        <textarea class="form-control" @bind="address"></textarea>
+                    </div>
+                    <h3 class="text-success fw-bold">Total: @CartService.GetTotal() AZN</h3>
+                    
+                    <!-- 🛑 Sənin OrdersController-in CreateOrder metodunu çağırır -->
+                    <button class="btn btn-warning w-100 fw-bold mt-3" @onclick="PlaceOrder">
+                        SİFARİŞİ VER
+                    </button>
+                    <p class="mt-2 small text-muted text-center">@statusMessage</p>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private string address = "Bakı şəhəri, ...";
+    private string statusMessage = "";
+
+    // 1. Database-də miqdarı yenilə (PUT api/v1/cart)
+    private async Task UpdateDbQuantity(CartItem item, int change)
+    {
+        item.Quantity += change;
+        if (item.Quantity < 1) item.Quantity = 1;
+
+        // Burada sənin UpdateQuantity metoduna uyğun DTO göndərməlisən
+        // Qeyd: Səbət elementinin ID-sini (CartId) backend-dən almalısan, hələlik sadə saxlayaq.
+        StateHasChanged();
+    }
+
+    // 2. Database-dən sil (DELETE api/v1/cart/{id})
+    private async Task RemoveFromDb(int productId)
+    {
+        // Real layihədə burada CartId ilə DELETE sorğusu göndərilir
+        CartService.RemoveItem(productId);
+        StateHasChanged();
+    }
+
+    // 3. SİFARİŞ YARAT (POST api/v1/orders)
+    private async Task PlaceOrder()
+    {
+        statusMessage = "Sifariş yaradılır...";
+        
+        var orderRequest = new
+        {
+            UserId = 1,
+            ShippingAddress = address
+        };
+
+        var response = await Http.PostAsJsonAsync("orders", orderRequest);
+
+        if (response.IsSuccessStatusCode)
+        {
+            statusMessage = "Uğurlu! Səbətiniz təmizləndi və sifariş yaradıldı. ✅";
+            CartService.ClearCart();
+            await Task.Delay(3000);
+            NavManager.NavigateTo("/");
+        }
+        else
+        {
+            statusMessage = "Xəta baş verdi. Səbətiniz boş ola bilər.";
+        }
+    }
+}

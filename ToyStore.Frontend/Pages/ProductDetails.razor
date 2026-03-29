@@ -1,0 +1,461 @@
+﻿@page "/product/{Id:int}"
+@using ToyStore.Frontend.Models
+@using ToyStore.Frontend.Services
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject CartService CartService
+
+<div class="container mt-5 mb-5">
+    @if (product == null && !isError)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-3">Məhsul məlumatları yüklənir...</p>
+        </div>
+    }
+    else if (isError)
+    {
+        <div class="alert alert-danger text-center py-5">
+            <h2>Məhsul tapılmadı! ❌</h2>
+            <button class="btn btn-primary mt-3" @onclick='() => NavManager.NavigateTo("/products")'>Kataloqa qayıt</button>
+        </div>
+    }
+    else
+    {
+        <div class="row bg-white p-4 shadow-sm rounded border">
+            <div class="col-md-6 text-center border-end">
+                <img src="@product.ImageUrl" class="img-fluid rounded" style="max-height: 450px;" alt="@product.Name" />
+            </div>
+            <div class="col-md-6 ps-md-5">
+                <h1 class="display-6 fw-bold">@product.Name</h1>
+                <p class="text-muted">Brend ID: #@product.BrandId | Kateqoriya ID: #@product.CategoryId</p>
+                
+                <h2 class="text-success fw-bold my-4">@product.Price.ToString("0.00") AZN</h2>
+                
+                <div class="mb-4">
+                    <h5 class="border-bottom pb-2">Haqqında</h5>
+                    <p class="text-secondary">@product.Description</p>
+                </div>
+
+                <div class="card bg-light border-0 p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="small text-muted">Stok vəziyyəti:</span>
+                            <p class="mb-0 fw-bold @(product.StockQuantity < 5 ? "text-danger" : "text-success")">
+                                @product.StockQuantity ədəd mövcuddur
+                            </p>
+                        </div>
+                        <button class="btn btn-primary btn-lg shadow" @onclick="HandleAddToCart" disabled="@isAdding">
+                            @buttonText
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<!-- ⭐ YORUM & RATING BÖLÜMÜ ⭐ -->
+@if (!isError && product != null)
+{
+    <div class="container mt-5 mb-5">
+        <!-- Yorum Özeti -->
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <h3 class="fw-bold mb-4">⭐ Müştəri Şərhleri (@reviews.Count)</h3>
+            </div>
+            <div class="col-md-3">
+                <div class="card shadow-sm border-0 p-4 text-center">
+                    <h2 class="text-warning fw-bold">@GetAverageRating().ToString("0.0")</h2>
+                    <div class="mb-2">
+                        @for (int i = 1; i <= 5; i++)
+                        {
+                            if (i <= (int)GetAverageRating())
+                            {
+                                <span class="text-warning">⭐</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">☆</span>
+                            }
+                        }
+                    </div>
+                    <small class="text-muted">@reviews.Count şərh</small>
+                </div>
+            </div>
+            <div class="col-md-9">
+                <!-- Rating Dağılımı -->
+                @for (int star = 5; star >= 1; star--)
+                {
+                    var count = reviews.Count(r => r.Rating == star);
+                    var percentage = reviews.Count > 0 ? (count * 100) / reviews.Count : 0;
+                    <div class="mb-2">
+                        <div class="d-flex align-items-center">
+                            <span class="small me-2">@star ⭐</span>
+                            <div class="progress flex-grow-1" style="height: 20px;">
+                                <div class="progress-bar bg-warning" style="width: @percentage%"></div>
+                            </div>
+                            <span class="small ms-2 text-muted">(@count)</span>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Yorum Yazma Formu -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card shadow-sm border-0 p-4">
+                    <h4 class="fw-bold mb-3">📝 Şərhini Yaz</h4>
+
+                    @if (showReviewSuccess)
+                    {
+                        <div class="alert alert-success alert-dismissible fade show">
+                            ✅ Şərh uğurla əlavə edildi!
+                            <button type="button" class="btn-close" @onclick='() => showReviewSuccess = false'></button>
+                        </div>
+                    }
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Adınız</label>
+                        <input type="text" class="form-control" placeholder="Adınızı daxil edin" @bind="newReview.UserName" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Rating Seç</label>
+                        <div>
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                var star = i;
+                                <button type="button" 
+                                        class="btn @(newReview.Rating >= star ? "btn-warning" : "btn-light") btn-lg me-2" 
+                                        style="width: 50px; font-size: 24px;"
+                                        @onclick='() => newReview.Rating = star'>
+                                    ⭐
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Şərhini Yaz</label>
+                        <textarea class="form-control" rows="4" placeholder="Məhsul haqqında sən nə düşünürsən?" @bind="newReview.Comment"></textarea>
+                        <small class="text-muted">Min 10, Max 500 simvol</small>
+                    </div>
+
+                    <button class="btn btn-primary btn-lg" @onclick="SubmitReview" disabled="@isSubmittingReview">
+                        @(isSubmittingReview ? "Göndərilir..." : "📤 Şərh Göndər")
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Şərhlər Listesi -->
+        <div class="row">
+            <div class="col-md-8">
+                <h4 class="fw-bold mb-3">Bütün Şərhləri Gör</h4>
+
+                @if (reviews.Count == 0)
+                {
+                    <div class="alert alert-info">
+                        Henüz şərh yoxdur. İlk şərhi yazın!
+                    </div>
+                }
+                else
+                {
+                    @foreach (var review in reviews.OrderByDescending(r => r.CreatedAt))
+                    {
+                        <div class="card shadow-sm border-0 mb-3 p-3">
+                            @if (editingReviewId == review.Id)
+                            {
+                                <!-- Edit Mode -->
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Şərhini Düzəlt</label>
+                                    <textarea class="form-control" rows="3" @bind="editingComment"></textarea>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Rating'i Düzəlt</label>
+                                    <div>
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            var star = i;
+                                            <button type="button" 
+                                                    class="btn @(editingRating >= star ? "btn-warning" : "btn-light") btn-sm me-2" 
+                                                    style="width: 40px;"
+                                                    @onclick='() => editingRating = star'>
+                                                ⭐
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-sm btn-success" @onclick="() => SaveEditReview(review.Id)">💾 Saxla</button>
+                                    <button class="btn btn-sm btn-secondary" @onclick="() => CancelEdit()">✖️ Ləğv Et</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <!-- View Mode -->
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="flex-grow-1">
+                                        <h6 class="fw-bold mb-1">@review.UserName</h6>
+                                        <div class="mb-2">
+                                            @for (int i = 1; i <= 5; i++)
+                                            {
+                                                if (i <= review.Rating)
+                                                {
+                                                    <span class="text-warning">⭐</span>
+                                                }
+                                                else
+                                                {
+                                                    <span class="text-muted">☆</span>
+                                                }
+                                            }
+                                        </div>
+                                        <p class="text-secondary mb-2">@review.Comment</p>
+                                    </div>
+                                    <div class="text-end">
+                                        @if (review.IsVerifiedPurchase)
+                                        {
+                                            <span class="badge bg-success small mb-2">✓ Təsdiqlənmiş Alıcı</span>
+                                        }
+                                        <p class="small text-muted mb-2">@review.CreatedAt.ToString("dd.MM.yyyy")</p>
+                                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => StartEditReview(review)">
+                                            ✏️ Düzəlt
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteReview(review.Id)">
+                                            🗑️ Sil
+                                        </button>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+    private ProductDto product;
+    private List<ReviewDto> reviews = new();
+    private bool isError = false;
+    private bool isAdding = false;
+    private bool isSubmittingReview = false;
+    private bool showReviewSuccess = false;
+    private string buttonText = "Səbətə at";
+    private CreateReviewDto newReview = new();
+
+    // Edit Review Fields
+    private int editingReviewId = -1;
+    private string editingComment = "";
+    private int editingRating = 0;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            product = await Http.GetFromJsonAsync<ProductDto>($"products/{Id}");
+            if (product == null) 
+            {
+                isError = true;
+            }
+            else
+            {
+                // Şərhlər yüklə
+                reviews = await Http.GetFromJsonAsync<List<ReviewDto>>($"reviews/product/{Id}") ?? new List<ReviewDto>();
+            }
+        }
+        catch 
+        { 
+            isError = true;
+        }
+    }
+
+    private decimal GetAverageRating()
+    {
+        if (reviews.Count == 0) return 0;
+        return (decimal)reviews.Average(r => r.Rating);
+    }
+
+    private async Task SubmitReview()
+    {
+        // Validasyon
+        if (string.IsNullOrWhiteSpace(newReview.UserName) || 
+            string.IsNullOrWhiteSpace(newReview.Comment) || 
+            newReview.Rating == 0)
+        {
+            return;
+        }
+
+        if (newReview.Comment.Length < 10 || newReview.Comment.Length > 500)
+        {
+            return;
+        }
+
+        isSubmittingReview = true;
+
+        try
+        {
+            newReview.ProductId = Id;
+
+            var response = await Http.PostAsJsonAsync("reviews", newReview);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var jsonContent = await response.Content.ReadAsStringAsync();
+                var newReviewData = System.Text.Json.JsonSerializer.Deserialize<ReviewDto>(
+                    jsonContent, 
+                    new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+
+                if (newReviewData != null)
+                {
+                    reviews.Add(newReviewData);
+                }
+
+                // Formu sıfırla
+                newReview = new();
+                showReviewSuccess = true;
+
+                await Task.Delay(3000);
+                showReviewSuccess = false;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Xəta: {ex.Message}");
+        }
+        finally
+        {
+            isSubmittingReview = false;
+        }
+    }
+
+    private async Task DeleteReview(int reviewId)
+    {
+        // Silmə onayı
+        if (!await ConfirmDelete())
+        {
+            return;
+        }
+
+        try
+        {
+            var response = await Http.DeleteAsync($"reviews/{reviewId}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Şərhi listədən sil
+                var reviewToDelete = reviews.FirstOrDefault(r => r.Id == reviewId);
+                if (reviewToDelete != null)
+                {
+                    reviews.Remove(reviewToDelete);
+                    StateHasChanged();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Xəta: {ex.Message}");
+        }
+    }
+
+    private async Task<bool> ConfirmDelete()
+    {
+        // JavaScript ile confirm dialog göster
+        // Basit çözüm: Blazor'da native confirm yerine kendi dialog'u kullanabilirsiniz
+        // Şimdilik true return ediyoruz (demo amaçlı)
+        return await System.Threading.Tasks.Task.FromResult(true);
+    }
+
+    private void StartEditReview(ReviewDto review)
+    {
+        editingReviewId = review.Id;
+        editingComment = review.Comment;
+        editingRating = review.Rating;
+    }
+
+    private void CancelEdit()
+    {
+        editingReviewId = -1;
+        editingComment = "";
+        editingRating = 0;
+    }
+
+    private async Task SaveEditReview(int reviewId)
+    {
+        if (string.IsNullOrWhiteSpace(editingComment) || editingRating == 0)
+        {
+            return;
+        }
+
+        try
+        {
+            var updateData = new { comment = editingComment, rating = editingRating };
+            var response = await Http.PutAsJsonAsync($"reviews/{reviewId}", updateData);
+
+            if (response.IsSuccessStatusCode)
+            {
+                var review = reviews.FirstOrDefault(r => r.Id == reviewId);
+                if (review != null)
+                {
+                    review.Comment = editingComment;
+                    review.Rating = editingRating;
+                }
+
+                CancelEdit();
+                StateHasChanged();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Xəta: {ex.Message}");
+        }
+    }
+
+    private async Task HandleAddToCart()
+    {
+        if (product != null && !isAdding)
+        {
+            isAdding = true;
+            try
+            {
+                var addItem = new CartAddItemDto
+                {
+                    UserId = 1,
+                    ProductId = product.Id,
+                    Quantity = 1
+                };
+
+                var response = await Http.PostAsJsonAsync("cart", addItem);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    buttonText = "Əlavə edildi! ✅";
+                    CartService.AddToCart(product);
+                }
+                else
+                {
+                    buttonText = "Xəta! ❌";
+                }
+                StateHasChanged();
+                await Task.Delay(2000);
+                buttonText = "Səbətə at";
+            }
+            catch
+            {
+                buttonText = "Xəta! ❌";
+                StateHasChanged();
+                await Task.Delay(2000);
+                buttonText = "Səbətə at";
+            }
+            finally
+            {
+                isAdding = false;
+            }
+        }
+    }
+}

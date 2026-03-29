@@ -1,0 +1,112 @@
+@page "/wishlist"
+@using ToyStore.Frontend.Models
+@using ToyStore.Frontend.Services
+@inject WishlistService WishlistService
+@inject NavigationManager NavManager
+@inject CartService CartService
+
+<div class="container mt-5 mb-5">
+    <!-- Səhifə Başlığı -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h1 class="display-5 fw-bold mb-2">❤️ Sevdiklərim</h1>
+            <p class="text-muted lead">@WishlistService.GetWishlistCount() məhsul</p>
+        </div>
+    </div>
+
+    @if (WishlistService.GetWishlistCount() == 0)
+    {
+        <div class="alert alert-info text-center py-5">
+            <h4>😢 Sevdiyin məhsul yoxdur</h4>
+            <p>Məhsulları sevdiklərinə əlavə etmək üçün ❤️ işarəsinə basın</p>
+            <button class="btn btn-primary mt-3" @onclick='() => NavManager.NavigateTo("/products")'>
+                🛍️ Kataloğa Git
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            @foreach (var product in WishlistService.GetWishlistItems())
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 product-card"
+                         style="cursor: pointer;"
+                         @onclick='() => NavManager.NavigateTo($"/product/{product.Id}")'>
+
+                        <!-- Favoridan Çıkar Düyməsi -->
+                        <button class="btn btn-close position-absolute top-0 end-0 m-2 bg-white rounded-circle shadow"
+                                style="width: 40px; height: 40px;"
+                                @onclick:stopPropagation="true"
+                                @onclick='() => WishlistService.RemoveFromWishlist(product.Id)'
+                                title="Favoridan Çıxar">
+                        </button>
+
+                        <!-- Məhsul Şəkli -->
+                        <div class="text-center p-3" style="background-color: #fbfbfb;">
+                            <img src="@product.ImageUrl" class="card-img-top rounded"
+                                 alt="@product.Name" style="height: 250px; object-fit: contain;">
+                        </div>
+
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title fw-bold text-dark">@product.Name</h5>
+                            <p class="card-text text-muted small flex-grow-1">
+                                @(product.Description?.Length > 80 ?
+                                    product.Description.Substring(0, 77) + "..." :
+                                    product.Description ?? "Məlumat yoxdur")
+                            </p>
+
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <span class="h4 mb-0 text-primary fw-bold">@product.Price.ToString("0.00") AZN</span>
+                            </div>
+                        </div>
+
+                        <div class="card-footer bg-white border-top-0 pb-3">
+                            <button class="btn btn-primary w-100"
+                                    @onclick:stopPropagation="true"
+                                    @onclick='() => AddToCart(product)'>
+                                🛒 Səbətə Əlavə Et
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Hamısını Səbətə Əlavə Et Düyməsi -->
+        <div class="row mt-5">
+            <div class="col-md-12">
+                <button class="btn btn-success btn-lg w-100" @onclick="AddAllToCart">
+                    📦 Hamısını Səbətə Əlavə Et
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+<style>
+    .product-card {
+        transition: all 0.3s ease;
+        border-radius: 10px;
+    }
+
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
+    }
+</style>
+
+@code {
+    private void AddToCart(ProductDto product)
+    {
+        CartService.AddToCart(product);
+    }
+
+    private void AddAllToCart()
+    {
+        foreach (var product in WishlistService.GetWishlistItems().ToList())
+        {
+            CartService.AddToCart(product);
+        }
+    }
+}

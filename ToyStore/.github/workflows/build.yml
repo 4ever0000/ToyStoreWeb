@@ -1,0 +1,28 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x' # Əgər mütləq .NET 9 lazımdırsa '9.0.x' edin
+
+    - name: Restore packages
+      run: dotnet restore ToyStore.csproj
+
+    - name: Build
+      run: dotnet build ToyStore.csproj --no-restore
+
+    - name: Publish
+      run: dotnet publish ToyStore.csproj -c Release -o out

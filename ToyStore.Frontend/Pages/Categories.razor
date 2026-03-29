@@ -1,0 +1,110 @@
+@page "/categories"
+@using ToyStore.Frontend.Services
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject CartService CartService
+
+<div class="container mt-5 mb-5">
+    <!-- Səhifə Başlığı -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h1 class="display-4 fw-bold text-center mb-2">🏪 Kateqoriyalar</h1>
+            <p class="text-center text-muted lead">Məhsulları kateqoriya ilə göz at</p>
+        </div>
+    </div>
+
+    @if (categories == null)
+    {
+        <div class="text-center mt-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+            <p class="mt-2 text-muted">Kateqoriyalar yüklənir...</p>
+        </div>
+    }
+    else if (categories.Count == 0)
+    {
+        <div class="alert alert-info text-center py-5">
+            <p>Kateqoriyalar tapılmadı.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            @foreach (var category in categories)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 category-card" 
+                         style="cursor: pointer;"
+                         @onclick='() => NavManager.NavigateTo($"/products")'>
+                        
+                        <div class="card-body text-center p-5">
+                            <div class="category-icon mb-3">
+                                <h1>@GetCategoryEmoji(category.Id)</h1>
+                            </div>
+                            <h5 class="card-title fw-bold">@category.Name</h5>
+                            <p class="card-text text-muted small mb-3">
+                                Məhsulları görmək üçün tıklayın
+                            </p>
+                            <button class="btn btn-success btn-sm" 
+                                    @onclick:stopPropagation="true"
+                                    @onclick='() => NavManager.NavigateTo("/products")'>
+                                Kateqoriyi Aç →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .category-card {
+        transition: all 0.3s ease;
+        border-radius: 10px;
+    }
+
+    .category-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important;
+    }
+
+    .category-icon {
+        font-size: 60px;
+    }
+</style>
+
+@code {
+    private List<CategoryDto> categories;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            categories = await Http.GetFromJsonAsync<List<CategoryDto>>("categories");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Xəta: {ex.Message}");
+            categories = new List<CategoryDto>();
+        }
+    }
+
+    private string GetCategoryEmoji(int categoryId)
+    {
+        return categoryId switch
+        {
+            1 => "🧩",  // Puzzle
+            2 => "🚗",  // Araba
+            3 => "👧",  // Qız
+            4 => "🦸",  // Cəngavər
+            5 => "🎮",  // Oyun
+            _ => "🎁"   // Gift
+        };
+    }
+
+    public class CategoryDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+    }
+}

@@ -1,0 +1,112 @@
+﻿@inherits LayoutComponentBase
+@using ToyStore.Frontend.Services
+@inject CartService CartService
+@inject WishlistService WishlistService
+@inject ThemeService ThemeService
+@implements IDisposable
+
+<div class="page">
+    <main>
+        <!-- Üst Menyu -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm py-3">
+            <div class="container">
+                <a class="navbar-brand fw-bold fs-4" href="/">🧸 ToyStore</a>
+                
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <div class="navbar-nav ms-auto align-items-center">
+                        <NavLink class="nav-link px-3" href="/" Match="NavLinkMatch.All">Ana Səhifə</NavLink>
+                        <NavLink class="nav-link px-3" href="/products">Oyuncaqlar</NavLink>
+                        <NavLink class="nav-link px-3" href="/catalog">Brendlər</NavLink>
+                        <NavLink class="nav-link px-3" href="/about">Haqqımızda</NavLink>
+
+                        <!-- ❤️ Sevdiklərim (Wishlist) -->
+                        <NavLink class="nav-link px-3 btn btn-outline-light ms-lg-2 position-relative" href="/wishlist" style="border: none;">
+                            <span class="fs-5">❤️</span>
+                            @if (WishlistService.GetWishlistCount() > 0)
+                            {
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info">
+                                    @WishlistService.GetWishlistCount()
+                                </span>
+                            }
+                        </NavLink>
+
+                        <!-- 🌙 Dark Mode Toggle -->
+                        <button class="nav-link px-3 btn btn-outline-light ms-lg-2" @onclick="ToggleTheme" style="border: none;">
+                            @(ThemeService.IsDarkMode ? "☀️" : "🌙")
+                        </button>
+
+                        <!-- ✅ Səbət Düyməsi (Badge ilə) -->
+                        <NavLink class="nav-link px-3 btn btn-outline-light ms-lg-2 position-relative" href="/cart" style="border: none;">
+                            <span class="fs-5">🛒</span>
+                            <span class="ms-1">Səbətim</span>
+                            @if (CartService.GetTotalCount() > 0)
+                            {
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                                    @CartService.GetTotalCount()
+                                    <span class="visually-hidden">məhsul</span>
+                                </span>
+                            }
+                        </NavLink>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Səhifənin daxili kontenti -->
+        <div class="container mt-4">
+            @Body
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center mt-5 py-4 border-top bg-light">
+            <p class="text-muted mb-0">&copy; 2024 ToyStore - Bütün hüquqlar qorunur.</p>
+        </footer>
+    </main>
+</div>
+
+@code {
+    protected override void OnInitialized()
+    {
+        // 🔔 CartService'dəki OnCartChanged event'ə subscribe (qeydiyyat) et
+        CartService.OnCartChanged += RefreshCart;
+
+        // 🎨 Theme değişikliklerini dinle
+        ThemeService.OnThemeChanged += RefreshTheme;
+
+        // ❤️ Wishlist değişikliklerini dinle
+        WishlistService.OnWishlistChanged += RefreshWishlist;
+    }
+
+    // Event fire olunduqda (məhsul əlavə/sil/etc.) bu metod çalışır
+    private void RefreshCart()
+    {
+        StateHasChanged(); // 🔄 Səhifəni yenilə - badge rəqəmi update olacaq
+    }
+
+    private void RefreshTheme()
+    {
+        StateHasChanged(); // 🌙 Səhifəni yenilə - tema değişti
+    }
+
+    private void RefreshWishlist()
+    {
+        StateHasChanged(); // ❤️ Səhifəni yenilə - wishlist değişti
+    }
+
+    private void ToggleTheme()
+    {
+        ThemeService.ToggleTheme();
+    }
+
+    // Komponent destroy olduqda event'dən unsubscribe et (belə ki, memory leak olmasın)
+    void IDisposable.Dispose()
+    {
+        CartService.OnCartChanged -= RefreshCart;
+        ThemeService.OnThemeChanged -= RefreshTheme;
+        WishlistService.OnWishlistChanged -= RefreshWishlist;
+    }
+}

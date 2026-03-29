@@ -1,0 +1,106 @@
+@page "/brands"
+@using ToyStore.Frontend.Services
+@inject HttpClient Http
+@inject NavigationManager NavManager
+@inject CartService CartService
+
+<div class="container mt-5 mb-5">
+    <!-- Səhifə Başlığı -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h1 class="display-4 fw-bold text-center mb-2">🏷️ Brendlər</h1>
+            <p class="text-center text-muted lead">Bütün brendlərimiz</p>
+        </div>
+    </div>
+
+    @if (brands == null)
+    {
+        <div class="text-center mt-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+            <p class="mt-2 text-muted">Brendlər yüklənir...</p>
+        </div>
+    }
+    else if (brands.Count == 0)
+    {
+        <div class="alert alert-info text-center py-5">
+            <p>Brendlər tapılmadı.</p>
+        </div>
+    }
+    else
+    {
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            @foreach (var brand in brands)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 brand-card" 
+                         style="cursor: pointer;"
+                         @onclick='() => NavManager.NavigateTo($"/products/{brand.Id}")'>
+                        
+                        <div class="card-body text-center p-5">
+                            <div class="brand-icon mb-3">
+                                <h2>@brand.Name.Substring(0, 1).ToUpper()</h2>
+                            </div>
+                            <h5 class="card-title fw-bold">@brand.Name</h5>
+                            <p class="card-text text-muted small">
+                                Klik edərək məhsulları gör
+                            </p>
+                            <button class="btn btn-primary btn-sm mt-3" 
+                                    @onclick:stopPropagation="true"
+                                    @onclick='() => NavManager.NavigateTo($"/products/{brand.Id}")'>
+                                Məhsulları Gör →
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .brand-card {
+        transition: all 0.3s ease;
+        border-radius: 10px;
+    }
+
+    .brand-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important;
+    }
+
+    .brand-icon {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: bold;
+    }
+</style>
+
+@code {
+    private List<BrandDto> brands;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            brands = await Http.GetFromJsonAsync<List<BrandDto>>("brands");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Xəta: {ex.Message}");
+            brands = new List<BrandDto>();
+        }
+    }
+
+    public class BrandDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+    }
+}

@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="ToyStore.Frontend/ToyStore.Frontend.csproj" />
+  <Project Path="ToyStore/ToyStore.csproj" />
+</Solution>

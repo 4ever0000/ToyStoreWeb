@@ -1,0 +1,91 @@
+﻿@page "/catalog"
+@inject HttpClient Http
+@inject NavigationManager NavManager
+
+<div class="container mt-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-primary text-white py-3">
+            <h3 class="mb-0 text-center">🏢 Bizim Brendlər</h3>
+        </div>
+        <div class="card-body">
+            <p class="text-muted text-center mb-4">Mağazamızda təmsil olunan rəsmi brendlərin siyahısı.</p>
+
+            @if (brands == null)
+            {
+                <div class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-secondary">Brendlər yüklənir...</p>
+                </div>
+            }
+            else if (brands.Count == 0)
+            {
+                <div class="alert alert-warning text-center">
+                    Hazırda heç bir brend məlumatı tapılmadı.
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 15%">ID</th>
+                                <th>Brendin Adı</th>
+                                <th class="text-end">Hərəkət</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var brand in brands)
+                            {
+                                <tr>
+                                    <td><span class="badge bg-secondary">#@brand.Id</span></td>
+                                    <td class="fw-bold text-dark">@brand.Name</td>
+                                    <td class="text-end">
+                                        <!-- ✅ Dəyişiklik buradadır: @onclick əlavə edildi -->
+                                        <button class="btn btn-outline-info btn-sm fw-bold"
+                                                @onclick="() => ShowProducts(brand.Id)">
+                                            Məhsullarına bax
+                                        </button>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3 text-end">
+                    <small class="text-muted font-italic">Cəmi: @brands.Count brend</small>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+    private List<BrandDto> brands;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            brands = await Http.GetFromJsonAsync<List<BrandDto>>("brands");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Xəta baş verdi: {ex.Message}");
+            brands = new List<BrandDto>();
+        }
+    }
+
+    // ✅ Brend ID-ni götürüb Products səhifəsinə göndərən funksiya
+    private void ShowProducts(int brandId)
+    {
+        NavManager.NavigateTo($"/products/{brandId}");
+    }
+
+    public class BrandDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; }
+    }
+}

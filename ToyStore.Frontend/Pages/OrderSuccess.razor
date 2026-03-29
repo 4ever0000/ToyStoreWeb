@@ -1,0 +1,347 @@
+@page "/order-success"
+@page "/order-success/{OrderId:int}"
+@using ToyStore.Frontend.Services
+@inject NavigationManager NavManager
+@inject CartService CartService
+
+<div class="container mt-5 mb-5">
+    <!-- Başarı Animasyonu -->
+    <div class="row mb-5">
+        <div class="col-md-12 text-center">
+            <div class="success-animation mb-4">
+                <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52" width="100" height="100">
+                    <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                    <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.6"/>
+                </svg>
+            </div>
+            <h1 class="display-5 fw-bold text-success mb-3">🎉 Sifariş Tamamlandı!</h1>
+            <p class="lead text-muted">Sizə təşəkkür edirik! Sifariş başarıyla alındı.</p>
+        </div>
+    </div>
+
+    <!-- Sifariş Detayları Kartı -->
+    <div class="row mb-5">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm border-0 p-4">
+                <!-- Sifariş Nömrəsi -->
+                <div class="alert alert-info bg-light border-0 p-4 text-center mb-4">
+                    <h5 class="text-muted mb-2">Sifariş Nömrəsi</h5>
+                    <h2 class="fw-bold text-primary">#@(OrderId ?? 12345)</h2>
+                    <small class="text-muted">Bu nömrəni yoxlamalar üçün saxlayın</small>
+                </div>
+
+                <!-- Sifariş Bilgileri -->
+                <div class="row mb-4 pb-4 border-bottom">
+                    <div class="col-md-6">
+                        <h5 class="fw-bold mb-3">📦 Sifariş Bilgileri</h5>
+                        <p class="mb-2">
+                            <strong>Sifariş Tarixi:</strong><br/>
+                            @DateTime.Now.ToString("dd.MM.yyyy HH:mm")
+                        </p>
+                        <p class="mb-2">
+                            <strong>Status:</strong><br/>
+                            <span class="badge bg-success">✅ Qəbul Edildi</span>
+                        </p>
+                        <p>
+                            <strong>Ödəniş Durumu:</strong><br/>
+                            <span class="badge bg-info">⏳ Gözləmədə</span>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="fw-bold mb-3">💰 Qiymət Xülasəsi</h5>
+                        <p class="mb-2 d-flex justify-content-between">
+                            <span>Məhsullar:</span>
+                            <strong>299.97 AZN</strong>
+                        </p>
+                        <p class="mb-2 d-flex justify-content-between">
+                            <span>Çatdırılma:</span>
+                            <strong>9.99 AZN</strong>
+                        </p>
+                        <p class="mb-0 d-flex justify-content-between border-top pt-2">
+                            <span class="fw-bold">Toplam:</span>
+                            <strong class="text-success fs-5">309.96 AZN</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Teslimat Bilgileri -->
+                <div class="row mb-4 pb-4 border-bottom">
+                    <div class="col-md-6">
+                        <h5 class="fw-bold mb-3">🏠 Teslimat Adresi</h5>
+                        <p class="text-secondary mb-0">
+                            Bakı, Nizami rayon<br/>
+                            28 May küçəsi, Apartman 45<br/>
+                            AZ1000, Azərbaycam<br/>
+                            <strong>Tel:</strong> +994 50 123 4567
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="fw-bold mb-3">👤 Alıcı Bilgileri</h5>
+                        <p class="text-secondary mb-0">
+                            <strong>Ad:</strong> Aylin Əlizadə<br/>
+                            <strong>Email:</strong> aylin@example.com<br/>
+                            <strong>Telefon:</strong> +994 50 123 4567
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Sifariş Edilen Məhsullar -->
+                <div class="mb-4 pb-4 border-bottom">
+                    <h5 class="fw-bold mb-3">📦 Sifariş Edilen Məhsullar</h5>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Məhsul</th>
+                                    <th class="text-center">Miqdar</th>
+                                    <th class="text-end">Qiymət</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>LEGO City Şəhər Seti</td>
+                                    <td class="text-center">1</td>
+                                    <td class="text-end"><strong>99.99 AZN</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Barbie Doll - Moda Koleksiyonu</td>
+                                    <td class="text-center">1</td>
+                                    <td class="text-end"><strong>79.99 AZN</strong></td>
+                                </tr>
+                                <tr>
+                                    <td>Araba Oyuncağı - Metal Modeli</td>
+                                    <td class="text-center">2</td>
+                                    <td class="text-end"><strong>59.99 AZN</strong></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Sonraki Adımlar -->
+                <div class="alert alert-success bg-light border-0 p-4">
+                    <h5 class="fw-bold mb-3">📋 Sonraki Adımlar</h5>
+                    <ul class="list-unstyled">
+                        <li class="mb-2">
+                            <span class="badge bg-success">1</span>
+                            <strong>Email Təsdiq</strong> - Tezliklə sizə təsdiq e-postası göndərəcəyik
+                        </li>
+                        <li class="mb-2">
+                            <span class="badge bg-success">2</span>
+                            <strong>Ödəniş İşlənməsi</strong> - Ödəniş 24 saat ərzində işlənəcəkdir
+                        </li>
+                        <li class="mb-2">
+                            <span class="badge bg-success">3</span>
+                            <strong>Ambar İşlənməsi</strong> - Məhsullar ambarda hazırlanacakdır
+                        </li>
+                        <li class="mb-2">
+                            <span class="badge bg-success">4</span>
+                            <strong>Çatdırılma</strong> - Bakı daxili 24-48 saat ərzində çatdırılacakdır
+                        </li>
+                        <li>
+                            <span class="badge bg-success">5</span>
+                            <strong>Təslim Edildi</strong> - Qapınızda alıcıdan imza alacakdır
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sifariş Takibi -->
+    <div class="row mb-5">
+        <div class="col-md-8 offset-md-2">
+            <div class="card shadow-sm border-0 p-4">
+                <h5 class="fw-bold mb-4">🔍 Sifariş Takibi</h5>
+                <div class="row text-center">
+                    <div class="col-md-3 mb-3">
+                        <div class="progress mb-2" style="height: 5px;">
+                            <div class="progress-bar" role="progressbar" style="width: 100%"></div>
+                        </div>
+                        <p class="small"><strong>✅ Qəbul Edildi</strong></p>
+                        <p class="text-muted small">Bugün</p>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="progress mb-2" style="height: 5px;">
+                            <div class="progress-bar bg-warning" role="progressbar" style="width: 50%"></div>
+                        </div>
+                        <p class="small"><strong>⏳ Ödəniş</strong></p>
+                        <p class="text-muted small">24 saat</p>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="progress mb-2" style="height: 5px;">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <p class="small"><strong>📦 Ambar</strong></p>
+                        <p class="text-muted small">24-48 saat</p>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <div class="progress mb-2" style="height: 5px;">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <p class="small"><strong>🚚 Çatdırılma</strong></p>
+                        <p class="text-muted small">48-72 saat</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bildirimler -->
+    <div class="row mb-5">
+        <div class="col-md-8 offset-md-2">
+            <div class="card border-0 bg-light p-4">
+                <h5 class="fw-bold mb-3">🔔 Bildirimləri Açın</h5>
+                <p class="text-secondary mb-3">
+                    Sifariş durumu hakkında SMS və e-posta bildirimləri almak üçün opt-in seçeneğini etkinleştirin.
+                </p>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="emailNotif" checked />
+                    <label class="form-check-label" for="emailNotif">
+                        📧 Email Bildirimleri
+                    </label>
+                </div>
+                <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="smsNotif" checked />
+                    <label class="form-check-label" for="smsNotif">
+                        💬 SMS Bildirimleri
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- İletişim & Destek -->
+    <div class="row mb-5">
+        <div class="col-md-8 offset-md-2">
+            <h5 class="fw-bold mb-4 text-center">📞 Yardıma mı ihtiyacınız var?</h5>
+            <div class="row">
+                <div class="col-md-6 mb-3">
+                    <div class="card text-center shadow-sm border-0">
+                        <div class="card-body">
+                            <h6 class="fw-bold mb-2">☎️ Telefonda Arayın</h6>
+                            <p class="text-secondary mb-0">
+                                <a href="tel:+994125125678" class="text-decoration-none">
+                                    +994 12 512 5678
+                                </a>
+                            </p>
+                            <small class="text-muted">24/7 Xəttin Dəstəyi</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6 mb-3">
+                    <div class="card text-center shadow-sm border-0">
+                        <div class="card-body">
+                            <h6 class="fw-bold mb-2">💬 Bizə Yazın</h6>
+                            <p class="text-secondary mb-0">
+                                <a href="/contact" class="text-decoration-none">
+                                    Əlaqə Formu
+                                </a>
+                            </p>
+                            <small class="text-muted">1 saat ərzində cavab</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Düğmələr -->
+    <div class="row mb-5">
+        <div class="col-md-8 offset-md-2">
+            <div class="d-grid gap-3">
+                <button class="btn btn-primary btn-lg" @onclick='() => NavManager.NavigateTo("/products")'>
+                    🛍️ Daha Məhsul Al
+                </button>
+                <button class="btn btn-outline-primary btn-lg" @onclick='() => NavManager.NavigateTo("/")'>
+                    🏠 Ana Səhifəyə Dön
+                </button>
+                <button class="btn btn-outline-secondary btn-lg" @onclick='() => NavManager.NavigateTo("/cart")'>
+                    🛒 Səbətə Bax
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Müşteri Memnuniyeti -->
+    <div class="row mb-5">
+        <div class="col-md-8 offset-md-2">
+            <div class="card bg-success bg-opacity-10 border-0 p-4">
+                <div class="text-center">
+                    <h5 class="fw-bold mb-3">⭐ Bizim Müşteri Derecelendirmesi</h5>
+                    <p class="text-warning fs-5 mb-2">⭐⭐⭐⭐⭐ 4.9/5 (5000+ rəy)</p>
+                    <p class="text-secondary mb-0">
+                        Sifariş aldıktan sonra, lütfen deneyiminizi değerlendirerek diğer müşterilere yardımcı olun!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .success-animation {
+        animation: slideIn 0.6s ease-out;
+    }
+
+    .checkmark {
+        width: 100px;
+        height: 100px;
+        border-radius: 50%;
+        display: block;
+        stroke-width: 2;
+        stroke: #28a745;
+        stroke-miterlimit: 10;
+        margin: 10% auto;
+        box-shadow: inset 0 0 0 #28a745;
+        animation: fill .4s ease-in-out .4s forwards, scale .3s ease-in-out .9s both;
+    }
+
+    .checkmark__circle {
+        stroke-dasharray: 166;
+        stroke-dashoffset: 166;
+        stroke: #28a745;
+        animation: stroke 0.6s cubic-bezier(0.65, 0, 0.45, 1) forwards;
+    }
+
+    .checkmark__check {
+        stroke-dasharray: 48;
+        stroke-dashoffset: 48;
+        animation: stroke 0.3s cubic-bezier(0.65, 0, 0.45, 1) 0.4s forwards;
+    }
+
+    .card {
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .card:hover {
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+
+    .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        font-weight: bold;
+    }
+</style>
+
+@code {
+    [Parameter] public int? OrderId { get; set; }
+
+    protected override void OnInitialized()
+    {
+        // OrderId parameter varsa kullan, yoksa random ID oluştur
+        if (!OrderId.HasValue)
+        {
+            OrderId = new Random().Next(100000, 999999);
+        }
+
+        // Səbəti temizle (sifariş tamamlandıktan sonra)
+        CartService.ClearCart();
+    }
+}

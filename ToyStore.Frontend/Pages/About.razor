@@ -1,0 +1,297 @@
+@page "/about"
+@using ToyStore.Frontend.Services
+@inject NavigationManager NavManager
+@inject CartService CartService
+
+<div class="container mt-5 mb-5">
+    <!-- Səhifə Başlığı -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h1 class="display-4 fw-bold text-center mb-2">Haqqımızda 🎯</h1>
+            <p class="text-center text-muted lead">ToyStore - Ən Yaxşı Oyuncaqlar, Ən Ucuz Qiymətlər</p>
+        </div>
+    </div>
+
+    <!-- Kompaniya Haqqında Bölümü -->
+    <div class="row mb-5">
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h2 class="fw-bold mb-3">📖 Bizimlə Tanış Olun</h2>
+                    <p class="text-secondary">
+                        ToyStore, 2010 yılından beri Azərbaycanda oyuncaq sectorunda lider olan bir e-commerce 
+                        platformudur. Biz, hər yaşdakı uşaqlar üçün keyfiyyətli, aman və əğlencəli oyuncaqları 
+                        ən sərfəli qiymətlərlə təqdim etməyə sadiqik.
+                    </p>
+                    <p class="text-secondary mt-3">
+                        Müştəriyə xidmət, keyfiyyət kontrol və sürətli çatdırılma bizim ən əsas dəyərlərimizdir. 
+                        Biz, milyonlardan çox ailəyə xidmət etmiş və onlara uşaqlarının məmnun olmalarını görmüş 
+                        sevincliyik.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <img src="https://via.placeholder.com/400x300?text=ToyStore+Magaza" class="img-fluid rounded shadow-sm" alt="ToyStore Mağazası" />
+        </div>
+    </div>
+
+    <!-- Misyon və Vizyon -->
+    <div class="row mb-5">
+        <div class="col-md-6 mb-3">
+            <div class="card bg-light border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h3 class="fw-bold mb-3">🎯 Misyonumuz</h3>
+                    <p class="text-secondary">
+                        Hər uşağa xoşbəxtlik və təhsilə kömək edən keyfiyyətli oyuncaqları ən sərfəli 
+                        qiymətlərlə və ən sürətli şəkildə çatdırmaq.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-3">
+            <div class="card bg-success bg-opacity-10 border-0 shadow-sm h-100">
+                <div class="card-body p-4">
+                    <h3 class="fw-bold mb-3">🌟 Vizyonumuz</h3>
+                    <p class="text-secondary">
+                        Azərbaycanda oyuncaq satışında Number 1 olmaq və uşaqların inkişafında mühüm rol 
+                        oynamaq.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Niyə Bizi Seçməlisiniz -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h2 class="fw-bold mb-4 text-center">Niyə Bizi Seçməlisiniz? ⭐</h2>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card text-center shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h4 class="text-success mb-3">🏆 Keyfiyyət Garantisi</h4>
+                    <p class="text-secondary">
+                        Bütün məhsullar beynəlxalq standartlara uyğun və test edilmişdir. 
+                        Uşağınızın aman olması bizim prioritetimizdir.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card text-center shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h4 class="text-primary mb-3">💰 Ən Ucuz Qiymətlər</h4>
+                    <p class="text-secondary">
+                        Birbaşa təchizatçılardan aldığımız üçün daha ucuz qiymətlərlə məhsul təqdim edə bilərik. 
+                        Rəqabətli qiymətləri heç harada tapmayacaqsız!
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card text-center shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h4 class="text-danger mb-3">🚚 Sürətli Çatdırılma</h4>
+                    <p class="text-secondary">
+                        Bakı daxili 24-48 saat ərzində çatdırılma. Bütün Azərbaycana 3-5 gün ərzində 
+                        təminatlandırılır.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card text-center shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h4 class="text-warning mb-3">🛡️ Təhlükəsiz Ödəniş</h4>
+                    <p class="text-secondary">
+                        Bütün ödəniş metodları təhlükəsizdir. Şəxsi məlumatlarınız həmişə şifrələnir 
+                        və qorunur.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card text-center shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h4 class="text-info mb-3">😊 24/7 Müştəri Dəstəyi</h4>
+                    <p class="text-secondary">
+                        Hər zaman sə bizə müraciət edə bilərsiniz. Suallarınıza 1 saat ərzində cavab veririk.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 mb-4">
+            <div class="card text-center shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h4 class="text-dark mb-3">🔄 Qaytarma Hüququ</h4>
+                    <p class="text-secondary">
+                        Sifariş aldıqdan sonra 30 gün ərzində qaytara bilərsiniz. Heçbir sual soruşulmayacaq!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rəqəmlər Bölümü -->
+    <div class="row mb-5 bg-light p-5 rounded">
+        <div class="col-md-3 text-center mb-3">
+            <h3 class="text-primary fw-bold">1M+</h3>
+            <p class="text-muted">Məmnun Müştəri</p>
+        </div>
+        <div class="col-md-3 text-center mb-3">
+            <h3 class="text-success fw-bold">10K+</h3>
+            <p class="text-muted">Məhsul Çeşidi</p>
+        </div>
+        <div class="col-md-3 text-center mb-3">
+            <h3 class="text-danger fw-bold">14+</h3>
+            <p class="text-muted">İl Təcrübə</p>
+        </div>
+        <div class="col-md-3 text-center mb-3">
+            <h3 class="text-warning fw-bold">5⭐</h3>
+            <p class="text-muted">Ortalaması</p>
+        </div>
+    </div>
+
+    <!-- Kontakt Bölümü -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h2 class="fw-bold mb-4 text-center">📞 Bizimlə Əlaqə Saxlayın</h2>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-3">📍 Ünvanımız</h4>
+                    <p class="text-secondary">
+                        <strong>ToyStore Mərkəzi Ofis</strong><br/>
+                        Bakı şəhəri, Nizami rayon<br/>
+                        28 May küçəsi, №45<br/>
+                        AZ1000, Azərbaycam Respublikası
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-3">☎️ Telefon</h4>
+                    <p class="text-secondary">
+                        <strong>Satış Xidməti:</strong> +994 12 512 1234<br/>
+                        <strong>Dəstək Xidməti:</strong> +994 12 512 5678<br/>
+                        <strong>Şikayətlər:</strong> +994 12 512 9999<br/>
+                        <strong>24/7 Dəstək Xətti:</strong> 1888-TOY-STORE
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-3">✉️ Email</h4>
+                    <p class="text-secondary">
+                        <strong>Ümumi:</strong> info@toystore.az<br/>
+                        <strong>Satış:</strong> sales@toystore.az<br/>
+                        <strong>Dəstək:</strong> support@toystore.az<br/>
+                        <strong>Şikayətlər:</strong> complaints@toystore.az
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body p-4">
+                    <h4 class="fw-bold mb-3">⏰ Iş Saatları</h4>
+                    <p class="text-secondary">
+                        <strong>Haftaiçi:</strong> 08:00 - 20:00<br/>
+                        <strong>Şənbə:</strong> 09:00 - 19:00<br/>
+                        <strong>Bazar:</strong> 10:00 - 18:00<br/>
+                        <strong>Bayram Günləri:</strong> 11:00 - 17:00
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sosyal Media -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h2 class="fw-bold mb-4 text-center">Sosyal Mediada Bizi İzləyin 📱</h2>
+        </div>
+
+        <div class="col-md-12 text-center">
+            <a href="https://facebook.com/toystore" target="_blank" class="btn btn-primary btn-lg mx-2 mb-2">
+                <i class="fab fa-facebook"></i> Facebook
+            </a>
+            <a href="https://instagram.com/toystore" target="_blank" class="btn btn-danger btn-lg mx-2 mb-2">
+                <i class="fab fa-instagram"></i> Instagram
+            </a>
+            <a href="https://twitter.com/toystore" target="_blank" class="btn btn-info btn-lg mx-2 mb-2">
+                <i class="fab fa-twitter"></i> Twitter
+            </a>
+            <a href="https://youtube.com/c/toystore" target="_blank" class="btn btn-danger btn-lg mx-2 mb-2">
+                <i class="fab fa-youtube"></i> YouTube
+            </a>
+            <a href="https://tiktok.com/toystore" target="_blank" class="btn btn-dark btn-lg mx-2 mb-2">
+                <i class="fab fa-tiktok"></i> TikTok
+            </a>
+        </div>
+    </div>
+
+    <!-- Çağrı Hareketi - CTA -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <div class="card bg-gradient-primary text-white shadow-sm border-0 p-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                <div class="text-center">
+                    <h2 class="fw-bold mb-3">🎉 Əlbəttə, Oyuncaqlar Almağa Başla!</h2>
+                    <p class="lead mb-4">
+                        Böyük seçim, ucuz qiymətlər və sürətli çatdırılma. 
+                        Bugün öz seçiminizi yapın!
+                    </p>
+                    <button class="btn btn-light btn-lg" @onclick='() => NavManager.NavigateTo("/products")'>
+                        🛍️ Kataloqa Keç
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        transition: all 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+
+    .btn {
+        border-radius: 8px;
+    }
+
+    .btn:hover {
+        transform: translateY(-2px);
+    }
+
+    h2, h3, h4 {
+        color: #2d3748;
+    }
+</style>
+
+@code {
+    // Bu səhifə statik məlumatlar göstərir
+    // Dinamik məlumat lazımsa backend'dən çəkə biləriz
+}

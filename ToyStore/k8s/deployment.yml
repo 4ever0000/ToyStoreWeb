@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: toystore-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: toystore-api
+  template:
+    metadata:
+      labels:
+        app: toystore-api
+    spec:
+      containers:
+      - name: toystore-api
+        image: rzayev777/toystore:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: ConnectionStrings__DefaultConnection
+          value: "Server=mssql,1433;Database=ToyStoreDb;User Id=sa;Password=!Rzayev777;TrustServerCertificate=True"

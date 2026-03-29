@@ -1,0 +1,203 @@
+@page "/order-history"
+@using ToyStore.Frontend.Services
+@inject CartService CartService
+@inject NavigationManager NavManager
+
+<div class="container mt-5 mb-5">
+    <!-- Səhifə Başlığı -->
+    <div class="row mb-5">
+        <div class="col-md-12">
+            <h1 class="display-5 fw-bold mb-2">📋 Sifariş Tarixçəsi</h1>
+            <p class="text-muted lead">Önceki siparişlərinizi göz at</p>
+        </div>
+    </div>
+
+    @if (orders == null)
+    {
+        <div class="text-center mt-5">
+            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
+            <p class="mt-2 text-muted">Siparişlər yüklənir...</p>
+        </div>
+    }
+    else if (orders.Count == 0)
+    {
+        <div class="alert alert-info text-center py-5">
+            <h4>📦 Henüz Sifariş Verməmisiniz</h4>
+            <p>Məhsulları görmək üçün kataloğa keçin</p>
+            <button class="btn btn-primary mt-3" @onclick='() => NavManager.NavigateTo("/products")'>
+                🛍️ Kataloğa Git
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            @foreach (var order in orders)
+            {
+                <div class="col-md-12 mb-4">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-light p-3">
+                            <div class="row align-items-center">
+                                <div class="col-md-6">
+                                    <h5 class="mb-0">
+                                        <strong>Sifariş #@order.OrderId</strong>
+                                    </h5>
+                                    <small class="text-muted">@order.OrderDate.ToString("dd.MM.yyyy HH:mm")</small>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <span class="badge @GetStatusBadge(order.Status)">
+                                        @order.Status
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h6 class="fw-bold mb-3">Məhsullar:</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <tbody>
+                                                @foreach (var item in order.Items)
+                                                {
+                                                    <tr>
+                                                        <td>@item.ProductName</td>
+                                                        <td class="text-center">x@item.Quantity</td>
+                                                        <td class="text-end">@item.Price.ToString("0.00") AZN</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 border-start">
+                                    <h6 class="fw-bold mb-3">Xülasə:</h6>
+                                    <p class="mb-2 d-flex justify-content-between">
+                                        <span>Məhsullar:</span>
+                                        <strong>@order.Subtotal.ToString("0.00") AZN</strong>
+                                    </p>
+                                    <p class="mb-2 d-flex justify-content-between">
+                                        <span>Çatdırılma:</span>
+                                        <strong>@order.ShippingCost.ToString("0.00") AZN</strong>
+                                    </p>
+                                    <p class="mb-0 d-flex justify-content-between border-top pt-2">
+                                        <span class="fw-bold">Toplam:</span>
+                                        <strong class="text-success">@order.TotalAmount.ToString("0.00") AZN</strong>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-white p-3">
+                            <button class="btn btn-sm btn-outline-primary" @onclick='() => ViewOrderDetails(order.OrderId)'>
+                                📖 Detaylı Görüntüle
+                            </button>
+                            @if (order.Status == "Tamamlandı")
+                            {
+                                <button class="btn btn-sm btn-outline-success" @onclick='() => ReorderItems(order.OrderId)'>
+                                    🔄 Yenidən Sipariş Ver
+                                </button>
+                            }
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<style>
+    .card {
+        border-radius: 10px;
+        transition: all 0.3s ease;
+    }
+
+    .card:hover {
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+</style>
+
+@code {
+    private List<OrderDto> orders;
+
+    protected override void OnInitialized()
+    {
+        // Demo məlumatları
+        orders = new List<OrderDto>
+        {
+            new OrderDto
+            {
+                OrderId = 12345,
+                OrderDate = DateTime.Now.AddDays(-10),
+                Status = "Tamamlandı",
+                Subtotal = 299.97m,
+                ShippingCost = 9.99m,
+                TotalAmount = 309.96m,
+                Items = new List<OrderItemDto>
+                {
+                    new OrderItemDto { ProductName = "LEGO City", Quantity = 1, Price = 99.99m },
+                    new OrderItemDto { ProductName = "Barbie Doll", Quantity = 1, Price = 79.99m },
+                    new OrderItemDto { ProductName = "Araba", Quantity = 2, Price = 59.99m }
+                }
+            },
+            new OrderDto
+            {
+                OrderId = 12344,
+                OrderDate = DateTime.Now.AddDays(-5),
+                Status = "Çatdırılıyor",
+                Subtotal = 149.99m,
+                ShippingCost = 9.99m,
+                TotalAmount = 159.98m,
+                Items = new List<OrderItemDto>
+                {
+                    new OrderItemDto { ProductName = "Oyuncaq Şəhər", Quantity = 1, Price = 149.99m }
+                }
+            }
+        };
+    }
+
+    private string GetStatusBadge(string status)
+    {
+        return status switch
+        {
+            "Tamamlandı" => "bg-success",
+            "Çatdırılıyor" => "bg-warning",
+            "Hazırlanıyor" => "bg-info",
+            "İptal Edildi" => "bg-danger",
+            _ => "bg-secondary"
+        };
+    }
+
+    private void ViewOrderDetails(int orderId)
+    {
+        // Detayları görmek için order-success sayfasına yönləndir
+        NavManager.NavigateTo($"/order-success/{orderId}");
+    }
+
+    private void ReorderItems(int orderId)
+    {
+        // Yenidən sipariş ver
+        Console.WriteLine($"Sipariş #{orderId} yenidən verildi");
+    }
+
+    public class OrderDto
+    {
+        public int OrderId { get; set; }
+        public DateTime OrderDate { get; set; }
+        public string Status { get; set; }
+        public decimal Subtotal { get; set; }
+        public decimal ShippingCost { get; set; }
+        public decimal TotalAmount { get; set; }
+        public List<OrderItemDto> Items { get; set; }
+    }
+
+    public class OrderItemDto
+    {
+        public string ProductName { get; set; }
+        public int Quantity { get; set; }
+        public decimal Price { get; set; }
+    }
+}

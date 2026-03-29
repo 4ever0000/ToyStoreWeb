@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  db:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "!Rzayev777"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1434:1433"
+    volumes:
+      - storeapi:/var/opt/mssql
+
+  api:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      ConnectionStrings__DefaultConnection: "Server=db,1433;Database=ToyStoreDb;User Id=sa;Password=!Rzayev777;TrustServerCertificate=True"
+    depends_on:
+      - db
+
+volumes:
+  storeapi:
