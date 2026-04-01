@@ -1,14 +1,15 @@
 @page "/order-history"
 @using ToyStore.Frontend.Services
+@using ToyStore.Frontend.Models
+@inject HttpClient Http
 @inject CartService CartService
 @inject NavigationManager NavManager
 
 <div class="container mt-5 mb-5">
-    <!-- Səhifə Başlığı -->
     <div class="row mb-5">
         <div class="col-md-12">
             <h1 class="display-5 fw-bold mb-2">📋 Sifariş Tarixçəsi</h1>
-            <p class="text-muted lead">Önceki siparişlərinizi göz at</p>
+            <p class="text-muted lead">Əvvəlki sifarişlərinizə göz atın</p>
         </div>
     </div>
 
@@ -16,16 +17,16 @@
     {
         <div class="text-center mt-5">
             <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
-            <p class="mt-2 text-muted">Siparişlər yüklənir...</p>
+            <p class="mt-2 text-muted">Sifarişlər yüklənir...</p>
         </div>
     }
     else if (orders.Count == 0)
     {
         <div class="alert alert-info text-center py-5">
-            <h4>📦 Henüz Sifariş Verməmisiniz</h4>
+            <h4>📦 Hələlik heç bir sifarişiniz yoxdur</h4>
             <p>Məhsulları görmək üçün kataloğa keçin</p>
             <button class="btn btn-primary mt-3" @onclick='() => NavManager.NavigateTo("/products")'>
-                🛍️ Kataloğa Git
+                🛍️ Kataloğa Get
             </button>
         </div>
     }
@@ -39,15 +40,11 @@
                         <div class="card-header bg-light p-3">
                             <div class="row align-items-center">
                                 <div class="col-md-6">
-                                    <h5 class="mb-0">
-                                        <strong>Sifariş #@order.OrderId</strong>
-                                    </h5>
+                                    <h5 class="mb-0"><strong>Sifariş #@order.OrderId</strong></h5>
                                     <small class="text-muted">@order.OrderDate.ToString("dd.MM.yyyy HH:mm")</small>
                                 </div>
                                 <div class="col-md-6 text-end">
-                                    <span class="badge @GetStatusBadge(order.Status)">
-                                        @order.Status
-                                    </span>
+                                    <span class="badge @GetStatusBadge(order.Status)">@order.Status</span>
                                 </div>
                             </div>
                         </div>
@@ -89,14 +86,8 @@
                         </div>
                         <div class="card-footer bg-white p-3">
                             <button class="btn btn-sm btn-outline-primary" @onclick='() => ViewOrderDetails(order.OrderId)'>
-                                📖 Detaylı Görüntüle
+                                📖 Detallı Görüntülə
                             </button>
-                            @if (order.Status == "Tamamlandı")
-                            {
-                                <button class="btn btn-sm btn-outline-success" @onclick='() => ReorderItems(order.OrderId)'>
-                                    🔄 Yenidən Sipariş Ver
-                                </button>
-                            }
                         </div>
                     </div>
                 </div>
@@ -105,83 +96,33 @@
     }
 </div>
 
-<style>
-    .card {
-        border-radius: 10px;
-        transition: all 0.3s ease;
-    }
-
-    .card:hover {
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
-    }
-
-    .table {
-        margin-bottom: 0;
-    }
-</style>
-
 @code {
     private List<OrderDto> orders;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        // Demo məlumatları
-        orders = new List<OrderDto>
+        try
         {
-            new OrderDto
-            {
-                OrderId = 12345,
-                OrderDate = DateTime.Now.AddDays(-10),
-                Status = "Tamamlandı",
-                Subtotal = 299.97m,
-                ShippingCost = 9.99m,
-                TotalAmount = 309.96m,
-                Items = new List<OrderItemDto>
-                {
-                    new OrderItemDto { ProductName = "LEGO City", Quantity = 1, Price = 99.99m },
-                    new OrderItemDto { ProductName = "Barbie Doll", Quantity = 1, Price = 79.99m },
-                    new OrderItemDto { ProductName = "Araba", Quantity = 2, Price = 59.99m }
-                }
-            },
-            new OrderDto
-            {
-                OrderId = 12344,
-                OrderDate = DateTime.Now.AddDays(-5),
-                Status = "Çatdırılıyor",
-                Subtotal = 149.99m,
-                ShippingCost = 9.99m,
-                TotalAmount = 159.98m,
-                Items = new List<OrderItemDto>
-                {
-                    new OrderItemDto { ProductName = "Oyuncaq Şəhər", Quantity = 1, Price = 149.99m }
-                }
-            }
-        };
-    }
-
-    private string GetStatusBadge(string status)
-    {
-        return status switch
+            // DÜZƏLİŞ: Real API-dan datanı çəkirik (api/v1/orders)
+            // Qeyd: Əgər login sistemi varsa, user ID-ni dinamik göndərməlisən
+            orders = await Http.GetFromJsonAsync<List<OrderDto>>("orders/user/1") ?? new List<OrderDto>();
+        }
+        catch (Exception ex)
         {
-            "Tamamlandı" => "bg-success",
-            "Çatdırılıyor" => "bg-warning",
-            "Hazırlanıyor" => "bg-info",
-            "İptal Edildi" => "bg-danger",
-            _ => "bg-secondary"
-        };
+            Console.WriteLine($"Xəta: {ex.Message}");
+            orders = new List<OrderDto>();
+        }
     }
 
-    private void ViewOrderDetails(int orderId)
+    private string GetStatusBadge(string status) => status switch
     {
-        // Detayları görmek için order-success sayfasına yönləndir
-        NavManager.NavigateTo($"/order-success/{orderId}");
-    }
+        "Tamamlandı" => "bg-success",
+        "Gözləmədə" => "bg-warning",
+        "Ləğv edildi" => "bg-danger",
+        _ => "bg-info"
+    };
 
-    private void ReorderItems(int orderId)
-    {
-        // Yenidən sipariş ver
-        Console.WriteLine($"Sipariş #{orderId} yenidən verildi");
-    }
+    private void ViewOrderDetails(int orderId) => NavManager.NavigateTo($"/order-success/{orderId}");
 
     public class OrderDto
     {

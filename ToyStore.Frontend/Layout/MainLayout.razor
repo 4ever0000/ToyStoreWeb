@@ -1,4 +1,5 @@
 ﻿@inherits LayoutComponentBase
+@using ToyStore.Frontend.Pages
 @using ToyStore.Frontend.Services
 @inject CartService CartService
 @inject WishlistService WishlistService
@@ -7,106 +8,153 @@
 
 <div class="page">
     <main>
-        <!-- Üst Menyu -->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-sm py-3">
-            <div class="container">
-                <a class="navbar-brand fw-bold fs-4" href="/">🧸 ToyStore</a>
+        <!-- 📱 ÜST MENYU (Navbar) -->
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-lg py-3">
+            <div class="container px-lg-5">
+                <!-- Logo -->
+                <a class="navbar-brand fw-bold fs-3 d-flex align-items-center" href="/">
+                    <span class="me-2">🧸</span> ToyStore
+                </a>
                 
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <!-- Mobil üçün Burger Menyu -->
+                <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                     <span class="navbar-toggler-icon"></span>
                 </button>
 
+                <!-- Menyu Linkləri -->
                 <div class="collapse navbar-collapse" id="navbarNav">
-                    <div class="navbar-nav ms-auto align-items-center">
+                    <div class="navbar-nav ms-auto align-items-center gap-2">
                         <NavLink class="nav-link px-3" href="/" Match="NavLinkMatch.All">Ana Səhifə</NavLink>
                         <NavLink class="nav-link px-3" href="/products">Oyuncaqlar</NavLink>
                         <NavLink class="nav-link px-3" href="/catalog">Brendlər</NavLink>
                         <NavLink class="nav-link px-3" href="/about">Haqqımızda</NavLink>
 
                         <!-- ❤️ Sevdiklərim (Wishlist) -->
-                        <NavLink class="nav-link px-3 btn btn-outline-light ms-lg-2 position-relative" href="/wishlist" style="border: none;">
-                            <span class="fs-5">❤️</span>
-                            @if (WishlistService.GetWishlistCount() > 0)
-                            {
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info">
-                                    @WishlistService.GetWishlistCount()
-                                </span>
-                            }
-                        </NavLink>
+                        <div class="nav-item">
+                            <NavLink class="nav-link px-3 position-relative d-flex align-items-center" href="/wishlist">
+                                <i class="bi bi-heart-fill text-danger fs-4"></i>
+                                @if (WishlistService.GetWishlistCount() > 0)
+                                {
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info border border-dark shadow-sm" style="font-size: 0.7rem; margin-top: 5px;">
+                                        @WishlistService.GetWishlistCount()
+                                    </span>
+                                }
+                            </NavLink>
+                        </div>
 
-                        <!-- 🌙 Dark Mode Toggle -->
-                        <button class="nav-link px-3 btn btn-outline-light ms-lg-2" @onclick="ToggleTheme" style="border: none;">
-                            @(ThemeService.IsDarkMode ? "☀️" : "🌙")
-                        </button>
+                        <!-- 🌙 Gecə/Gündüz Düyməsi -->
+                        <div class="nav-item mx-2">
+                            <button class="btn btn-outline-light border-0 rounded-circle p-2 shadow-none" @onclick="ToggleTheme">
+                                @if (ThemeService.IsDarkMode)
+                                {
+                                    <i class="bi bi-sun-fill text-warning fs-4 animate-fade"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-moon-stars-fill text-info fs-4 animate-fade"></i>
+                                }
+                            </button>
+                        </div>
 
-                        <!-- ✅ Səbət Düyməsi (Badge ilə) -->
-                        <NavLink class="nav-link px-3 btn btn-outline-light ms-lg-2 position-relative" href="/cart" style="border: none;">
-                            <span class="fs-5">🛒</span>
-                            <span class="ms-1">Səbətim</span>
-                            @if (CartService.GetTotalCount() > 0)
-                            {
-                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                                    @CartService.GetTotalCount()
-                                    <span class="visually-hidden">məhsul</span>
-                                </span>
-                            }
-                        </NavLink>
+                        <!-- 🛒 Səbət Düyməsi -->
+                        <div class="nav-item ms-lg-2">
+                            <NavLink class="btn btn-primary rounded-pill px-4 d-flex align-items-center gap-2 shadow-sm" href="/cart">
+                                <i class="bi bi-cart3 fs-5"></i>
+                                <span class="fw-bold">Səbətim</span>
+                                @if (CartService.GetTotalCount() > 0)
+                                {
+                                    <span class="badge rounded-pill bg-danger border border-light">
+                                        @CartService.GetTotalCount()
+                                    </span>
+                                }
+                            </NavLink>
+                        </div>
                     </div>
                 </div>
             </div>
         </nav>
 
-        <!-- Səhifənin daxili kontenti -->
-        <div class="container mt-4">
+        <!-- 🖼️ SƏHİFƏNİN DAXİLİ KONTENTİ -->
+        <div class="container-fluid py-2">
             @Body
         </div>
 
-        <!-- Footer -->
-        <footer class="text-center mt-5 py-4 border-top bg-light">
-            <p class="text-muted mb-0">&copy; 2024 ToyStore - Bütün hüquqlar qorunur.</p>
+        <!-- 🤖 AI CHAT BOT KOMPONENTİ 🤖 -->
+        <ChatBot />
+
+        <!-- 🏢 FOOTER -->
+        <footer class="footer mt-auto py-5 border-top">
+            <div class="container text-center">
+                <div class="mb-3">
+                    <span class="fs-4 fw-bold">ToyStore</span>
+                </div>
+                <p class="text-muted mb-0">&copy; 2024 ToyStore - Bütün hüquqlar qorunur.</p>
+                <div class="mt-2 d-flex justify-content-center gap-3">
+                    <a href="#" class="text-muted text-decoration-none small">Gizlilik siyasəti</a>
+                    <a href="#" class="text-muted text-decoration-none small">Şərtlər</a>
+                    <a href="/contact" class="text-muted text-decoration-none small">Əlaqə</a>
+                </div>
+            </div>
         </footer>
     </main>
 </div>
 
+<style>
+    /* Navbar Linklərinin Hover Effekti */
+    .nav-link {
+        font-weight: 500;
+        transition: color 0.3s ease;
+    }
+    .nav-link:hover {
+        color: #667eea !important;
+    }
+
+    /* Badge tənzimləməsi */
+    .badge {
+        font-weight: 600;
+        padding: 0.35em 0.65em;
+    }
+
+    /* Animasiyalı icon keçidi */
+    .animate-fade {
+        animation: fadeIn 0.5s ease;
+    }
+    @@keyframes fadeIn {
+        from { opacity: 0; transform: scale(0.8); }
+        to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Footer dizaynı */
+    footer {
+        background-color: var(--bs-body-bg);
+    }
+</style>
+
 @code {
     protected override void OnInitialized()
     {
-        // 🔔 CartService'dəki OnCartChanged event'ə subscribe (qeydiyyat) et
-        CartService.OnCartChanged += RefreshCart;
-
-        // 🎨 Theme değişikliklerini dinle
-        ThemeService.OnThemeChanged += RefreshTheme;
-
-        // ❤️ Wishlist değişikliklerini dinle
-        WishlistService.OnWishlistChanged += RefreshWishlist;
+        // Event-lərə abunə oluruq
+        CartService.OnCartChanged += RefreshUI;
+        ThemeService.OnThemeChanged += RefreshUI;
+        WishlistService.OnWishlistChanged += RefreshUI;
     }
 
-    // Event fire olunduqda (məhsul əlavə/sil/etc.) bu metod çalışır
-    private void RefreshCart()
+    // Bütün yenilənmələri vahid metodla idarə edirik
+    private void RefreshUI()
     {
-        StateHasChanged(); // 🔄 Səhifəni yenilə - badge rəqəmi update olacaq
+        StateHasChanged();
     }
 
-    private void RefreshTheme()
+    private async Task ToggleTheme()
     {
-        StateHasChanged(); // 🌙 Səhifəni yenilə - tema değişti
+        await ThemeService.ToggleTheme();
     }
 
-    private void RefreshWishlist()
-    {
-        StateHasChanged(); // ❤️ Səhifəni yenilə - wishlist değişti
-    }
-
-    private void ToggleTheme()
-    {
-        ThemeService.ToggleTheme();
-    }
-
-    // Komponent destroy olduqda event'dən unsubscribe et (belə ki, memory leak olmasın)
+    // Unsubscribe (Vacibdir!)
     void IDisposable.Dispose()
     {
-        CartService.OnCartChanged -= RefreshCart;
-        ThemeService.OnThemeChanged -= RefreshTheme;
-        WishlistService.OnWishlistChanged -= RefreshWishlist;
+        CartService.OnCartChanged -= RefreshUI;
+        ThemeService.OnThemeChanged -= RefreshUI;
+        WishlistService.OnWishlistChanged -= RefreshUI;
     }
 }

@@ -1,0 +1,123 @@
+﻿@using System.Collections.Generic
+@inject IJSRuntime JSRuntime
+
+<div class="chatbot-container @(isOpen ? "open" : "")">
+    <!-- 🟢 Çat Başlığı (Bağlamaq üçün) -->
+    <div class="chat-header shadow-sm" @onclick="ToggleChat">
+        <span class="fw-bold"><i class="bi bi-robot me-2"></i> ToyStore AI Köməkçi</span>
+        <i class="bi @(isOpen ? "bi-chevron-down" : "bi-chat-dots-fill") float-end"></i>
+    </div>
+
+    @if (isOpen)
+    {
+        <!-- ⚪ Mesajlar Hissəsi -->
+        <div class="chat-body" id="chatBody">
+            <div class="message ai shadow-sm">
+                Salam! Mən ToyStore-un süni zəka köməkçisiyəm. Sizə necə kömək edə bilərəm? 😊
+            </div>
+
+            @foreach (var msg in messages)
+            {
+                <div class="message @(msg.IsUser ? "user shadow-sm" : "ai shadow-sm")">
+                    @msg.Text
+                </div>
+            }
+
+            @if (isTyping)
+            {
+                <div class="message ai typing shadow-sm">
+                    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+                </div>
+            }
+        </div>
+
+        <!-- 🔵 Yazma Hissəsi -->
+        <div class="chat-footer">
+            <div class="input-group">
+                <input type="text" class="form-control border-0 shadow-none" 
+                       placeholder="Sualınızı yazın..." 
+                       @bind="userMessage" @onkeypress="HandleKeyPress" />
+                <button class="btn btn-primary rounded-circle ms-2 shadow-sm" @onclick="SendMessage">
+                    <i class="bi bi-send-fill"></i>
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool isOpen = false;
+    private bool isTyping = false;
+    private string userMessage = "";
+    private List<ChatMessage> messages = new();
+
+    private void ToggleChat() => isOpen = !isOpen;
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(userMessage)) return;
+
+        // İstifadəçi mesajını əlavə et
+        messages.Add(new ChatMessage { Text = userMessage, IsUser = true });
+        var tempMsg = userMessage;
+        userMessage = "";
+        isTyping = true;
+
+        // AI-nin cavabını simulyasiya edirik (Bura gələcəkdə OpenAI API bağlaya bilərsən)
+        await Task.Delay(1500); 
+        
+        string aiResponse = GetSimpleAIResponse(tempMsg);
+        messages.Add(new ChatMessage { Text = aiResponse, IsUser = false });
+        
+        isTyping = false;
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await SendMessage();
+    }
+
+    // Hələlik sadə bir cavab məntiqi (Bura sonradan ChatGPT qoşula bilər)
+    private string GetSimpleAIResponse(string input)
+    {
+        input = input.ToLower();
+        if (input.Contains("salam")) return "Salam! Sizə hansı oyuncağı tapmaqda kömək edim?";
+        if (input.Contains("qiymət")) return "Oyuncaqlarımızın qiyməti 10 AZN-dən başlayır. Kataloqa baxmağı unutmayın!";
+        if (input.Contains("çatdırılma")) return "Bakı daxili 24 saat ərzində çatdırırıq!";
+        return "Maraqlı sualdır! Mən hələ öyrənirəm, amma mağazamızda hər yaşa uyğun LEGO və fiqurlar var.";
+    }
+
+    public class ChatMessage { public string Text { get; set; } public bool IsUser { get; set; } }
+}
+
+<style>
+    /* 🎨 CHATBOT DİZAYNI */
+    .chatbot-container {
+        position: fixed; bottom: 20px; right: 20px; width: 320px;
+        z-index: 2000; border-radius: 15px; overflow: hidden;
+        transition: all 0.3s ease; font-family: sans-serif;
+    }
+    .chatbot-container:not(.open) { width: 230px; cursor: pointer; }
+
+    .chat-header { background: #667eea; color: white; padding: 12px 15px; cursor: pointer; }
+    
+    .chat-body { 
+        height: 350px; background: var(--bs-body-bg); border-left: 1px solid #ddd; border-right: 1px solid #ddd;
+        overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;
+    }
+
+    .message { padding: 10px 14px; border-radius: 15px; max-width: 85%; font-size: 0.9rem; line-height: 1.4; }
+    .message.ai { background: #f1f1f1; align-self: flex-start; color: #333; border-bottom-left-radius: 2px; }
+    .message.user { background: #667eea; color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
+
+    [data-bs-theme="dark"] .message.ai { background: #333; color: white; }
+
+    .chat-footer { background: white; padding: 10px; border: 1px solid #ddd; border-radius: 0 0 15px 15px; }
+    [data-bs-theme="dark"] .chat-footer { background: #222; border-color: #444; }
+
+    /* Typing animasiyası */
+    .typing .dot { height: 6px; width: 6px; background: #888; border-radius: 50%; display: inline-block; margin-right: 3px; animation: bounce 1s infinite; }
+    .typing .dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing .dot:nth-child(3) { animation-delay: 0.4s; }
+    @@keyframes bounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+</style>

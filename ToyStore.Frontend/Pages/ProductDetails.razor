@@ -127,8 +127,8 @@
                             @for (int i = 1; i <= 5; i++)
                             {
                                 var star = i;
-                                <button type="button" 
-                                        class="btn @(newReview.Rating >= star ? "btn-warning" : "btn-light") btn-lg me-2" 
+                                <button type="button"
+                                        class="btn @(newReview.Rating >= star ? "btn-warning" : "btn-light") btn-lg me-2"
                                         style="width: 50px; font-size: 24px;"
                                         @onclick='() => newReview.Rating = star'>
                                     ⭐
@@ -179,8 +179,8 @@
                                         @for (int i = 1; i <= 5; i++)
                                         {
                                             var star = i;
-                                            <button type="button" 
-                                                    class="btn @(editingRating >= star ? "btn-warning" : "btn-light") btn-sm me-2" 
+                                            <button type="button"
+                                                    class="btn @(editingRating >= star ? "btn-warning" : "btn-light") btn-sm me-2"
                                                     style="width: 40px;"
                                                     @onclick='() => editingRating = star'>
                                                 ⭐
@@ -257,19 +257,20 @@
     {
         try
         {
+            // DÜZƏLİŞ: api/v1/products əlavə edildi
             product = await Http.GetFromJsonAsync<ProductDto>($"products/{Id}");
-            if (product == null) 
+            if (product == null)
             {
                 isError = true;
             }
             else
             {
-                // Şərhlər yüklə
+                // DÜZƏLİŞ: api/v1/reviews əlavə edildi
                 reviews = await Http.GetFromJsonAsync<List<ReviewDto>>($"reviews/product/{Id}") ?? new List<ReviewDto>();
             }
         }
-        catch 
-        { 
+        catch
+        {
             isError = true;
         }
     }
@@ -282,15 +283,9 @@
 
     private async Task SubmitReview()
     {
-        // Validasyon
-        if (string.IsNullOrWhiteSpace(newReview.UserName) || 
-            string.IsNullOrWhiteSpace(newReview.Comment) || 
+        if (string.IsNullOrWhiteSpace(newReview.UserName) ||
+            string.IsNullOrWhiteSpace(newReview.Comment) ||
             newReview.Rating == 0)
-        {
-            return;
-        }
-
-        if (newReview.Comment.Length < 10 || newReview.Comment.Length > 500)
         {
             return;
         }
@@ -301,13 +296,14 @@
         {
             newReview.ProductId = Id;
 
+            // DÜZƏLİŞ: api/v1/reviews əlavə edildi
             var response = await Http.PostAsJsonAsync("reviews", newReview);
 
             if (response.IsSuccessStatusCode)
             {
                 var jsonContent = await response.Content.ReadAsStringAsync();
                 var newReviewData = System.Text.Json.JsonSerializer.Deserialize<ReviewDto>(
-                    jsonContent, 
+                    jsonContent,
                     new System.Text.Json.JsonSerializerOptions { PropertyNameCaseInsensitive = true }
                 );
 
@@ -316,7 +312,6 @@
                     reviews.Add(newReviewData);
                 }
 
-                // Formu sıfırla
                 newReview = new();
                 showReviewSuccess = true;
 
@@ -336,19 +331,13 @@
 
     private async Task DeleteReview(int reviewId)
     {
-        // Silmə onayı
-        if (!await ConfirmDelete())
-        {
-            return;
-        }
-
         try
         {
+            // DÜZƏLİŞ: api/v1/reviews əlavə edildi
             var response = await Http.DeleteAsync($"reviews/{reviewId}");
 
             if (response.IsSuccessStatusCode)
             {
-                // Şərhi listədən sil
                 var reviewToDelete = reviews.FirstOrDefault(r => r.Id == reviewId);
                 if (reviewToDelete != null)
                 {
@@ -361,14 +350,6 @@
         {
             Console.WriteLine($"Xəta: {ex.Message}");
         }
-    }
-
-    private async Task<bool> ConfirmDelete()
-    {
-        // JavaScript ile confirm dialog göster
-        // Basit çözüm: Blazor'da native confirm yerine kendi dialog'u kullanabilirsiniz
-        // Şimdilik true return ediyoruz (demo amaçlı)
-        return await System.Threading.Tasks.Task.FromResult(true);
     }
 
     private void StartEditReview(ReviewDto review)
@@ -395,6 +376,7 @@
         try
         {
             var updateData = new { comment = editingComment, rating = editingRating };
+            // DÜZƏLİŞ: api/v1/reviews əlavə edildi
             var response = await Http.PutAsJsonAsync($"reviews/{reviewId}", updateData);
 
             if (response.IsSuccessStatusCode)
@@ -430,6 +412,7 @@
                     Quantity = 1
                 };
 
+                // DÜZƏLİŞ: api/v1/cart əlavə edildi
                 var response = await Http.PostAsJsonAsync("cart", addItem);
 
                 if (response.IsSuccessStatusCode)

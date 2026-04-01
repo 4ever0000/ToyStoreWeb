@@ -5,18 +5,17 @@ using ToyStore.Frontend.Services;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 
-// Əsas komponentləri əlavə edirik
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-// Backend API-nin ünvanı. 
-// DİQQƏT: Backend-i işə salanda Swagger-də görünən ünvanı (məs: localhost:5289) bura yazmalısınız.
+// API ünvanı - Sonunda mütləq "/" olmalıdır
 builder.Services.AddScoped(sp => new HttpClient
 {
+    // Ünvanın sonuna mütləq "api/v1/" əlavə edirik
     BaseAddress = new Uri("http://localhost:5289/api/v1/")
 });
 
-// Servisləri qeydiyyatdan keçiririk
+// Servislər
 builder.Services.AddSingleton<CartService>();
 builder.Services.AddSingleton<WishlistService>();
 builder.Services.AddSingleton<ThemeService>();

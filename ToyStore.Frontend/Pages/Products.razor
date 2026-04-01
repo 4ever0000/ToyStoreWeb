@@ -1,353 +1,211 @@
 ﻿@page "/products"
 @page "/products/{BrandId:int}"
+@page "/wishlist"
 @using ToyStore.Frontend.Models
 @using ToyStore.Frontend.Services
 @inject HttpClient Http
 @inject NavigationManager NavManager
 @inject CartService CartService
+@inject WishlistService WishlistService
+@inject ThemeService ThemeService
+@implements IDisposable
 
-<div class="container-fluid mt-4 mb-5">
+<!-- ✨ TOAST BİLDİRİŞ ✨ -->
+@if (showToast)
+{
+    <div class="toast-notification shadow-lg">
+        <i class="bi bi-cart-check-fill me-2 fs-5"></i> @toastMessage
+    </div>
+}
+
+<div class="container-fluid mt-2 mb-5 px-lg-5">
     <!-- Başlıq Hissəsi -->
     <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
         <div>
-            <h2 class="fw-bold text-dark mb-0">
-                @(BrandId.HasValue ? "Seçilmiş Brend Məhsulları" : "Bütün Oyuncaqlar") 🧸
+            <h2 class="fw-bold mb-0">
+                @if (isWishlistMode)
+                {
+                    <i class="bi bi-heart-fill text-danger me-2"></i> <span>Seçilmiş Oyuncaqlar</span>
+                }
+                else
+                {
+                    <i class="bi bi-shop text-primary me-2"></i> <span>@(BrandId.HasValue ? "Brend Məhsulları" : "Bütün Oyuncaqlar")</span>
+                }
             </h2>
-            @if (BrandId.HasValue)
+            @if (isWishlistMode || BrandId.HasValue)
             {
-                <button class="btn btn-link p-0 text-decoration-none text-muted" @onclick='() => NavManager.NavigateTo("/products")'>
-                    ⬅ Bütün məhsullara qayıt
+                <button class="btn btn-link p-0 text-muted mt-1 text-decoration-none shadow-none" @onclick='() => NavManager.NavigateTo("/products")'>
+                    <i class="bi bi-arrow-left"></i> Bütün məhsullara qayıt
                 </button>
             }
         </div>
-        <span class="badge bg-primary fs-5 rounded-pill px-3">
-            Cəmi: @(filteredProducts?.Count ?? 0) məhsul
-        </span>
+        <div class="text-end">
+            <span class="badge rounded-pill bg-primary px-3 py-2 fs-6 shadow-sm">
+                Cəmi: <b>@(filteredProducts?.Count ?? 0)</b> məhsul
+            </span>
+        </div>
     </div>
 
-    <!-- 🔍 AXTARIŞ & FİLTRLƏR BÖLÜMÜ 🔍 -->
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <div class="card shadow-sm p-4 bg-light">
-                <div class="row g-3">
-                    <!-- Axtarış Boxu -->
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold">🔍 Axtarış</label>
-                        <input type="text" class="form-control" placeholder="Məhsul adını yaz..." 
-                               @bind="searchText" @bind:event="oninput" @onchange="ApplyFilters" />
-                    </div>
-
-                    <!-- Qiymət Filtri (Min) -->
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold">Min Qiymət</label>
-                        <input type="number" class="form-control" placeholder="0" 
-                               @bind="minPrice" @bind:event="onchange" @onblur="ApplyFilters" />
-                    </div>
-
-                    <!-- Qiymət Filtri (Max) -->
-                    <div class="col-md-2">
-                        <label class="form-label fw-bold">Max Qiymət</label>
-                        <input type="number" class="form-control" placeholder="999" 
-                               @bind="maxPrice" @bind:event="onchange" @onblur="ApplyFilters" />
-                    </div>
-
-                    <!-- Sıralanma -->
-                    <div class="col-md-4">
-                        <label class="form-label fw-bold">📊 Sıralanma</label>
-                        <select class="form-select" @onchange="(ChangeEventArgs e) => { sortBy = e.Value.ToString(); ApplyFilters(); }">
-                            <option value="name">📝 Ada Göra (A-Z)</option>
-                            <option value="price-asc">💰 Qiymətə Göra (Ucuz → Bahalı)</option>
-                            <option value="price-desc">💰 Qiymətə Göra (Bahalı → Ucuz)</option>
-                            <option value="stock">📦 Stoka Göra (Ən Çox)</option>
-                        </select>
-                    </div>
-
-                    <!-- Brendlər Filtri -->
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">🏷️ Brendlər</label>
-                        <div class="d-flex flex-wrap gap-2">
-                            <button class="btn btn-sm @(selectedBrands.Count == 0 ? "btn-primary" : "btn-outline-primary")" 
-                                    @onclick="() => { selectedBrands.Clear(); ApplyFilters(); }">
-                                Hamısı
-                            </button>
-                            @if (allBrands != null)
-                            {
-                                @foreach (var brand in allBrands)
-                                {
-                                    <button class="btn btn-sm @(selectedBrands.Contains(brand.Id) ? "btn-primary" : "btn-outline-primary")" 
-                                            @onclick="() => ToggleBrand(brand.Id)">
-                                        @brand.Name
-                                    </button>
-                                }
-                            }
-                        </div>
-                    </div>
-
-                    <!-- Kateqoriyalar Filtri -->
-                    <div class="col-md-6">
-                        <label class="form-label fw-bold">🏪 Kateqoriyalar</label>
-                        <div class="d-flex flex-wrap gap-2">
-                            <button class="btn btn-sm @(selectedCategories.Count == 0 ? "btn-success" : "btn-outline-success")" 
-                                    @onclick="() => { selectedCategories.Clear(); ApplyFilters(); }">
-                                Hamısı
-                            </button>
-                            @if (allCategories != null)
-                            {
-                                @foreach (var category in allCategories)
-                                {
-                                    <button class="btn btn-sm @(selectedCategories.Contains(category.Id) ? "btn-success" : "btn-outline-success")" 
-                                            @onclick="() => ToggleCategory(category.Id)">
-                                        @category.Name
-                                    </button>
-                                }
-                            }
-                        </div>
-                    </div>
-
-                    <!-- Filtri Sıfırla Düyməsi -->
-                    <div class="col-md-12">
-                        <button class="btn btn-warning w-100" @onclick="ResetFilters">
-                            🔄 Filtirləri Sıfırla
-                        </button>
-                    </div>
+    <!-- 🔍 FİLTRLƏR (Dark Mode uyğun) 🔍 -->
+    <div class="card shadow-sm border-0 rounded-4 p-4 mb-5 filter-card border">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label fw-bold small opacity-75">Axtarış</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-primary"></i></span>
+                    <input type="text" class="form-control border-start-0 shadow-none bg-transparent" 
+                           placeholder="Oyuncaq adı..." @bind="searchText" @bind:event="oninput" @onchange="ApplyFilters" />
                 </div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold small opacity-75">Qiymət (AZN)</label>
+                <div class="input-group">
+                    <input type="number" class="form-control shadow-none bg-transparent" placeholder="Min" @bind="minPrice" />
+                    <span class="input-group-text bg-transparent border-0 px-1">-</span>
+                    <input type="number" class="form-control shadow-none bg-transparent" placeholder="Max" @bind="maxPrice" />
+                    <button class="btn btn-primary px-3" @onclick="ApplyFilters"><i class="bi bi-funnel-fill"></i></button>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label fw-bold small">Sıralama</label>
+                <select class="form-select shadow-none bg-transparent" @onchange="(ChangeEventArgs e) => { sortBy = e.Value.ToString(); ApplyFilters(); }">
+                    <option value="name">Ada Görə (A-Z)</option>
+                    <option value="price-asc">Ucuzdan Bahalıya</option>
+                    <option value="price-desc">Bahalıdan Ucuza</option>
+                </select>
             </div>
         </div>
     </div>
 
     @if (allProducts == null)
     {
-        <!-- Yüklənmə anı -->
-        <div class="text-center mt-5">
-            <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
-            <p class="mt-2 text-muted">Oyuncaqlar kataloqu hazırlanır...</p>
-        </div>
+        <div class="text-center py-5"><div class="spinner-grow text-primary"></div><p class="mt-2 text-muted">Məhsullar gətirilir...</p></div>
     }
     else if (filteredProducts.Count == 0)
     {
-        <div class="alert alert-info text-center py-5">
-            <h4>😢 Məhsul tapılmadı</h4>
-            <p>Filterlərinizi dəyişib yenidən cəhd edin</p>
-            <button class="btn btn-primary mt-3" @onclick="ResetFilters">
-                Filtirləri Sıfırla
-            </button>
+        <div class="alert alert-info text-center py-5 rounded-4 border-0 shadow-sm">
+            <i class="bi bi-emoji-frown fs-1 d-block mb-3"></i>
+            <h5>@(isWishlistMode ? "Seçilmiş məhsulunuz yoxdur." : "Heç bir oyuncaq tapılmadı.")</h5>
+            <button class="btn btn-primary mt-2 rounded-pill px-4" @onclick='() => NavManager.NavigateTo("/products")'>Mağazaya qayıt</button>
         </div>
     }
     else
     {
-        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        <div class="row row-cols-1 row-cols-md-3 row-cols-xl-4 g-4">
             @foreach (var item in filteredProducts)
             {
-                @if (item.IsActive)
-                {
-                    <div class="col">
-                        <!-- ✅ KARTIN ÜZƏRİNƏ BASANDA DETAY SƏHİFƏSİNƏ KEÇİD -->
-                        <div class="card h-100 shadow-sm border-0 position-relative product-card"
-                             style="cursor: pointer; transition: transform 0.2s;"
-                             @onclick='() => NavManager.NavigateTo($"/product/{item.Id}")'>
+                <div class="col">
+                    <div class="card h-100 shadow-sm border-0 product-card overflow-hidden" @onclick='() => NavManager.NavigateTo($"/product/{item.Id}")'>
+                        
+                        <button class="wishlist-btn" @onclick:stopPropagation="true" @onclick="() => HandleToggleWishlist(item)">
+                            <i class="bi @(WishlistService.IsInWishlist(item.Id) ? "bi-heart-fill text-danger" : "bi-heart")"></i>
+                        </button>
 
-                            <!-- Stok miqdarı az qalıbsa -->
-                            @if (item.StockQuantity < 10 && item.StockQuantity > 0)
-                            {
-                                <span class="position-absolute top-0 start-0 badge bg-danger m-2 shadow">
-                                    Son @item.StockQuantity ədəd!
-                                </span>
-                            }
-                            @if (item.StockQuantity == 0)
-                            {
-                                <span class="position-absolute top-0 start-0 badge bg-secondary m-2 shadow">
-                                    Stokda Yoxdur
-                                </span>
-                            }
+                        <div class="card-img-container p-4 d-flex align-items-center justify-content-center bg-light" style="height:200px;">
+                            <img src="@item.ImageUrl" class="card-img-top img-fluid" style="max-height:100%; object-fit:contain;" alt="@item.Name">
+                        </div>
 
-                            <!-- Məhsul Şəkli -->
-                            <div class="text-center p-3" style="background-color: #fbfbfb;">
-                                <img src="@item.ImageUrl" class="card-img-top rounded"
-                                     alt="@item.Name" style="height: 250px; object-fit: contain;">
-                            </div>
-
-                            <div class="card-body d-flex flex-column">
-                                <h5 class="card-title fw-bold text-dark">@item.Name</h5>
-                                <p class="card-text text-muted small flex-grow-1">
-                                    @(item.Description?.Length > 80 ? item.Description.Substring(0, 77) + "..." : item.Description ?? "Məlumat yoxdur")
-                                </p>
-
-                                <div class="d-flex justify-content-between align-items-center mt-3">
-                                    <span class="h4 mb-0 text-primary fw-bold">@item.Price.ToString("0.00") AZN</span>
-                                </div>
-                            </div>
-
-                            <div class="card-footer bg-white border-top-0 pb-3">
-                                <button class="btn btn-primary w-100" 
-                                        @onclick:stopPropagation="true"
-                                        @onclick="() => AddToCart(item)"
-                                        disabled="@(item.StockQuantity == 0)">
-                                    🛒 Səbətə at
+                        <div class="card-body p-4 d-flex flex-column">
+                            <h6 class="fw-bold text-truncate mb-3">@item.Name</h6>
+                            <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top">
+                                <span class="h5 mb-0 text-primary fw-bold">@item.Price.ToString("0.00") AZN</span>
+                                <button class="btn btn-primary rounded-circle shadow" style="width:42px; height:42px;" @onclick:stopPropagation="true" @onclick="() => AddToCart(item)">
+                                    <i class="bi bi-cart-plus fs-5"></i>
                                 </button>
-                                <div class="d-flex justify-content-between small text-muted mt-2">
-                                    <span>Anbarda: <b>@item.StockQuantity</b></span>
-                                    <span>ID: #@item.Id</span>
-                                </div>
                             </div>
                         </div>
                     </div>
-                }
+                </div>
             }
         </div>
     }
 </div>
 
-<style>
-    /* Kartın üzərinə gələndə bir az böyüməsi üçün kiçik effekt */
-    .product-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(0,0,0,0.1) !important;
-    }
-
-    .form-control, .form-select {
-        border-radius: 8px;
-        border: 1px solid #ddd;
-    }
-
-    .form-control:focus, .form-select:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-    }
-
-    .btn-outline-primary:hover, .btn-outline-success:hover {
-        transition: all 0.2s ease;
-    }
-</style>
-
 @code {
     [Parameter] public int? BrandId { get; set; }
-
     private List<ProductDto> allProducts;
     private List<ProductDto> filteredProducts;
-    private List<BrandDto> allBrands;
-    private List<CategoryDto> allCategories;
-
-    // Filtreleme değişkenleri
     private string searchText = "";
     private decimal minPrice = 0;
-    private decimal maxPrice = 999999;
+    private decimal maxPrice = 5000;
     private string sortBy = "name";
-    private List<int> selectedBrands = new();
-    private List<int> selectedCategories = new();
+    private bool showToast = false;
+    private string toastMessage = "";
+    private bool isWishlistMode = false;
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            // Bütün məhsulları, brendləri və kateqoriyaları çəkirik
-            allProducts = await Http.GetFromJsonAsync<List<ProductDto>>("products");
-            allBrands = await Http.GetFromJsonAsync<List<BrandDto>>("brands") ?? new List<BrandDto>();
-            allCategories = await Http.GetFromJsonAsync<List<CategoryDto>>("categories") ?? new List<CategoryDto>();
-
-            ApplyFilters();
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Xəta baş verdi: {ex.Message}");
-            allProducts = new List<ProductDto>();
-            allBrands = new List<BrandDto>();
-            allCategories = new List<CategoryDto>();
-            filteredProducts = new List<ProductDto>();
-        }
+        ThemeService.OnThemeChanged += RefreshUI;
+        WishlistService.OnWishlistChanged += RefreshUI;
+        
+        // 🛑 Naviqasiya dəyişəndə səhifəni məcburi yenilə
+        NavManager.LocationChanged += HandleLocationChanged;
+        
+        await LoadData();
+        UpdateMode();
     }
 
-    // Səhifə daxili keçidlərdə (Məs: Brendlər arası) filtrin yenilənməsi üçün
     protected override void OnParametersSet()
     {
-        if (BrandId.HasValue && !selectedBrands.Contains(BrandId.Value))
-        {
-            selectedBrands.Clear();
-            selectedBrands.Add(BrandId.Value);
-        }
+        UpdateMode();
+    }
+
+    private void HandleLocationChanged(object sender, LocationChangedEventArgs e)
+    {
+        UpdateMode();
+        StateHasChanged();
+    }
+
+    private void UpdateMode()
+    {
+        isWishlistMode = NavManager.Uri.ToLower().Contains("/wishlist");
         ApplyFilters();
+    }
+
+    private async Task LoadData()
+    {
+        try {
+            allProducts = await Http.GetFromJsonAsync<List<ProductDto>>("products");
+        } catch { allProducts = new(); }
+    }
+
+    private void RefreshUI() => InvokeAsync(StateHasChanged);
+
+    private void HandleToggleWishlist(ProductDto p)
+    {
+        WishlistService.ToggleWishlist(p);
+        if (isWishlistMode) ApplyFilters();
     }
 
     private void ApplyFilters()
     {
         if (allProducts == null) return;
 
-        // Filtirləri tətbiq et
         filteredProducts = allProducts
             .Where(p => p.IsActive)
             .Where(p => string.IsNullOrEmpty(searchText) || p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
             .Where(p => p.Price >= minPrice && p.Price <= maxPrice)
-            .Where(p => selectedBrands.Count == 0 || selectedBrands.Contains(p.BrandId))
-            .Where(p => selectedCategories.Count == 0 || selectedCategories.Contains(p.CategoryId))
+            .Where(p => !isWishlistMode || WishlistService.IsInWishlist(p.Id))
+            .Where(p => !BrandId.HasValue || p.BrandId == BrandId.Value)
             .ToList();
 
-        // Sıralama tətbiq et
-        filteredProducts = sortBy switch
-        {
-            "price-asc" => filteredProducts.OrderBy(p => p.Price).ToList(),
-            "price-desc" => filteredProducts.OrderByDescending(p => p.Price).ToList(),
-            "stock" => filteredProducts.OrderByDescending(p => p.StockQuantity).ToList(),
-            _ => filteredProducts.OrderBy(p => p.Name).ToList()
-        };
+        if (sortBy == "price-asc") filteredProducts = filteredProducts.OrderBy(p => p.Price).ToList();
+        else if (sortBy == "price-desc") filteredProducts = filteredProducts.OrderByDescending(p => p.Price).ToList();
+        else filteredProducts = filteredProducts.OrderBy(p => p.Name).ToList();
     }
 
-    private void ToggleBrand(int brandId)
+    private async Task AddToCart(ProductDto product)
     {
-        if (selectedBrands.Contains(brandId))
-            selectedBrands.Remove(brandId);
-        else
-            selectedBrands.Add(brandId);
-
-        ApplyFilters();
+        CartService.AddToCart(product);
+        toastMessage = $"{product.Name} səbətə atıldı!";
+        showToast = true; StateHasChanged();
+        await Task.Delay(2500); showToast = false; StateHasChanged();
     }
 
-    private void ToggleCategory(int categoryId)
+    public void Dispose()
     {
-        if (selectedCategories.Contains(categoryId))
-            selectedCategories.Remove(categoryId);
-        else
-            selectedCategories.Add(categoryId);
-
-        ApplyFilters();
-    }
-
-    private void ResetFilters()
-    {
-        searchText = "";
-        minPrice = 0;
-        maxPrice = 999999;
-        sortBy = "name";
-        selectedBrands.Clear();
-        selectedCategories.Clear();
-        ApplyFilters();
-    }
-
-    private void AddToCart(ProductDto product)
-    {
-        var modelProduct = new ProductDto
-        {
-            Id = product.Id,
-            Name = product.Name,
-            Price = product.Price,
-            Description = product.Description,
-            StockQuantity = product.StockQuantity,
-            CategoryId = product.CategoryId,
-            BrandId = product.BrandId,
-            ImageUrl = product.ImageUrl,
-            IsActive = product.IsActive
-        };
-        CartService.AddToCart(modelProduct);
-    }
-
-    // Local DTO Modelləri (Backend DTOları Application/DTOs'də var)
-    public class BrandDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
-    }
-
-    public class CategoryDto
-    {
-        public int Id { get; set; }
-        public string Name { get; set; }
+        ThemeService.OnThemeChanged -= RefreshUI;
+        WishlistService.OnWishlistChanged -= RefreshUI;
+        NavManager.LocationChanged -= HandleLocationChanged; // Unsubscribe
     }
 }

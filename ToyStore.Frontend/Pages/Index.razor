@@ -5,36 +5,36 @@
 @inject HttpClient Http
 @inject NavigationManager NavManager
 @inject CartService CartService
+@inject WishlistService WishlistService
+@inject ThemeService ThemeService
+@implements IDisposable
 
-<!-- ✨ HERO BANNER BÖLÜMÜ ✨ -->
-<section class="hero-section text-white text-center py-5" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); min-height: 350px; display: flex; align-items: center;">
-    <div class="container">
-        <h1 class="display-4 fw-bold mb-3 animate-fade-in">🧸 Xoş gəldiniz ToyStore'a!</h1>
-        <p class="lead mb-4 text-white-50">Hər yaş üçün ən yaxşı oyuncaqları tapın</p>
-        <button class="btn btn-light btn-lg shadow-sm" @onclick='() => NavManager.NavigateTo("/products")'>
+<!-- ✨ HERO BANNER ✨ -->
+<section class="hero-section text-white text-center py-5 shadow">
+    <div class="container py-5">
+        <h1 class="display-3 fw-bold mb-3 animate-fade-in">🧸 Xoş gəldiniz ToyStore'a!</h1>
+        <p class="lead mb-4 opacity-75">Hər yaş üçün ən yaxşı oyuncaqları tapın</p>
+        <button class="btn btn-light btn-lg px-5 shadow-sm fw-bold rounded-pill" @onclick='() => NavManager.NavigateTo("/products")'>
             🛍️ Kataloqu Kəşf Et
         </button>
     </div>
 </section>
 
-<!-- ⭐ POPULYAR MƏHSULLAR BÖLÜMÜ ⭐ -->
-<section class="products-section py-5">
+<!-- ⭐ POPULYAR MƏHSULLAR ⭐ -->
+<section class="products-section py-5 bg-dynamic">
     <div class="container">
-        <h2 class="fw-bold mb-5 text-center text-dark">⭐ Ən Populyar Məhsullar</h2>
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <h2 class="fw-bold mb-0">⭐ Ən Populyar Məhsullar</h2>
+            <button class="btn btn-outline-primary rounded-pill" @onclick='() => NavManager.NavigateTo("/products")'>
+                Hamısını gör
+            </button>
+        </div>
 
         @if (popularProducts == null)
         {
             <div class="text-center py-5">
-                <div class="spinner-border text-primary" style="width: 3rem; height: 3rem;" role="status">
-                    <span class="visually-hidden">Yüklənir...</span>
-                </div>
-                <p class="mt-3 text-muted">Məhsullar yüklənir...</p>
-            </div>
-        }
-        else if (popularProducts.Count == 0)
-        {
-            <div class="alert alert-info text-center py-5">
-                <p>Hələlik məhsul yoxdur. Daha sonra yoxlayın!</p>
+                <div class="spinner-grow text-primary" role="status"></div>
+                <p class="mt-3 text-muted">Məhsullar gətirilir...</p>
             </div>
         }
         else
@@ -43,79 +43,63 @@
                 @foreach (var product in popularProducts)
                 {
                     <div class="col">
-                        <!-- ✨ MƏHSUL KARTI ✨ -->
-                        <div class="card h-100 shadow-sm border-0 product-card" 
-                             style="cursor: pointer; transition: all 0.3s ease;"
+                        <div class="card h-100 shadow-sm border-0 product-card overflow-hidden" 
                              @onclick='() => NavManager.NavigateTo($"/product/{product.Id}")'>
 
-                            <!-- Stok miqdarı az qalıbsa -->
-                            @if (product.StockQuantity < 10 && product.StockQuantity > 0)
-                            {
-                                <span class="position-absolute top-0 start-0 badge bg-danger m-2 shadow">
-                                    Son @product.StockQuantity ədəd!
-                                </span>
-                            }
+                            <!-- Wishlist (Ürək) -->
+                            <button class="wishlist-btn" @onclick:stopPropagation="true" @onclick="() => ToggleWishlist(product)">
+                                <i class="bi @(WishlistService.IsInWishlist(product.Id) ? "bi-heart-fill text-danger" : "bi-heart")"></i>
+                            </button>
 
-                            <!-- Məhsul Şəkli -->
-                            <div class="text-center p-3" style="background-color: #fbfbfb; min-height: 200px;">
-                                <img src="@product.ImageUrl" class="card-img-top rounded" 
-                                     alt="@product.Name" style="height: 180px; object-fit: contain;">
+                            <div class="card-img-container p-4 d-flex align-items-center justify-content-center bg-light-gray" style="height: 220px;">
+                                <img src="@product.ImageUrl" class="card-img-top img-fluid" alt="@product.Name" style="max-height: 100%; object-fit: contain;">
                             </div>
 
-                            <div class="card-body d-flex flex-column">
-                                <h5 class="card-title fw-bold text-dark">@product.Name</h5>
+                            <div class="card-body d-flex flex-column p-4">
+                                <h5 class="card-title fw-bold">@product.Name</h5>
                                 <p class="card-text text-muted small flex-grow-1">
-                                    @(product.Description?.Length > 70 ? 
-                                        product.Description.Substring(0, 67) + "..." : 
-                                        product.Description ?? "Məlumat yoxdur")
+                                    @(product.Description?.Length > 70 ? product.Description.Substring(0, 67) + "..." : product.Description)
                                 </p>
 
-                                <div class="d-flex justify-content-between align-items-center mt-3 mb-3">
-                                    <h4 class="text-success fw-bold mb-0">@product.Price.ToString("0.00") AZN</h4>
+                                <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top">
+                                    <h4 class="text-primary fw-bold mb-0">@product.Price.ToString("0.00") AZN</h4>
+                                    <button class="btn btn-primary rounded-circle shadow-sm" style="width:42px; height:42px;" 
+                                            @onclick:stopPropagation="true" @onclick="() => CartService.AddToCart(product)">
+                                        <i class="bi bi-cart-plus fs-5"></i>
+                                    </button>
                                 </div>
-
-                                <!-- Səbətə əlavə düyməsi -->
-                                <button class="btn btn-primary w-100" 
-                                        @onclick:stopPropagation="true"
-                                        @onclick="() => AddToCartFromIndex(product)">
-                                    🛒 Səbətə at
-                                </button>
                             </div>
                         </div>
                     </div>
                 }
-            </div>
-
-            <!-- Hamısını görmək düyməsi -->
-            <div class="text-center mt-5">
-                <button class="btn btn-outline-primary btn-lg" @onclick='() => NavManager.NavigateTo("/products")'>
-                    📦 Bütün Məhsulları Gör
-                </button>
             </div>
         }
     </div>
 </section>
 
 <!-- 📢 İNFO BÖLÜMÜ 📢 -->
-<section class="info-section py-5 bg-light">
-    <div class="container">
-        <div class="row text-center">
-            <div class="col-md-4 mb-4">
-                <div class="info-card p-4">
-                    <h5 class="fw-bold mb-2">🚚 Sürətli Çatdırılma</h5>
-                    <p class="text-muted">2-3 gün ərzində evinizə çatır</p>
+<section class="info-section py-5 bg-dynamic-alt border-top border-bottom">
+    <div class="container text-center">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="p-4 rounded-4 bg-glass shadow-sm">
+                    <i class="bi bi-truck text-primary display-5 mb-3"></i>
+                    <h5 class="fw-bold">Sürətli Çatdırılma</h5>
+                    <p class="text-muted small mb-0">2-3 gün ərzində evinizə çatır</p>
                 </div>
             </div>
-            <div class="col-md-4 mb-4">
-                <div class="info-card p-4">
-                    <h5 class="fw-bold mb-2">💳 Təhlükəsiz Ödəniş</h5>
-                    <p class="text-muted">Bütün ödəniş metodları qəbul olunur</p>
+            <div class="col-md-4">
+                <div class="p-4 rounded-4 bg-glass shadow-sm">
+                    <i class="bi bi-shield-check text-success display-5 mb-3"></i>
+                    <h5 class="fw-bold">Təhlükəsiz Ödəniş</h5>
+                    <p class="text-muted small mb-0">Bütün kartlar qəbul olunur</p>
                 </div>
             </div>
-            <div class="col-md-4 mb-4">
-                <div class="info-card p-4">
-                    <h5 class="fw-bold mb-2">😊 24/7 Dəstək</h5>
-                    <p class="text-muted">Hər zaman bizə müraciət edə bilərsiniz</p>
+            <div class="col-md-4">
+                <div class="p-4 rounded-4 bg-glass shadow-sm">
+                    <i class="bi bi-chat-heart text-danger display-5 mb-3"></i>
+                    <h5 class="fw-bold">24/7 Dəstək</h5>
+                    <p class="text-muted small mb-0">Hər zaman bizə yaza bilərsiniz</p>
                 </div>
             </div>
         </div>
@@ -127,69 +111,36 @@
 
     protected override async Task OnInitializedAsync()
     {
-        try
-        {
-            // API'dən bütün məhsulları çəkiriksə
-            var allProducts = await Http.GetFromJsonAsync<List<ProductDto>>("products");
-
-            // İlk 6 məhsulu götür
-            if (allProducts != null && allProducts.Count > 0)
-            {
-                popularProducts = allProducts.Where(p => p.IsActive).Take(6).ToList();
-            }
-            else
-            {
-                popularProducts = new List<ProductDto>();
-            }
-        }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Xəta baş verdi: {ex.Message}");
-            popularProducts = new List<ProductDto>();
-        }
+        ThemeService.OnThemeChanged += RefreshUI;
+        WishlistService.OnWishlistChanged += RefreshUI;
+        try {
+            var all = await Http.GetFromJsonAsync<List<ProductDto>>("products");
+            popularProducts = all?.Take(3).ToList();
+        } catch { popularProducts = new(); }
     }
 
-    private void AddToCartFromIndex(ProductDto product)
-    {
-        CartService.AddToCart(product);
+    private void RefreshUI() => InvokeAsync(StateHasChanged);
+
+    private void ToggleWishlist(ProductDto p) => WishlistService.ToggleWishlist(p);
+
+    public void Dispose() {
+        ThemeService.OnThemeChanged -= RefreshUI;
+        WishlistService.OnWishlistChanged -= RefreshUI;
     }
 }
 
 <style>
+    /* CSS Dəyişiklikləri */
+    .bg-dynamic { background-color: var(--bs-body-bg); }
+    .bg-dynamic-alt { background-color: var(--bs-tertiary-bg); }
+    .bg-light-gray { background-color: rgba(0,0,0,0.03); }
+    [data-bs-theme="dark"] .bg-light-gray { background-color: rgba(255,255,255,0.05); }
+    
+    .bg-glass { background: rgba(var(--bs-emphasis-color-rgb), 0.02); transition: 0.3s; }
+    .bg-glass:hover { transform: translateY(-5px); background: rgba(var(--bs-emphasis-color-rgb), 0.05); }
+
     .hero-section {
-        background-attachment: fixed;
-        position: relative;
-    }
-
-    .product-card {
-        border-radius: 10px;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .product-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 15px 35px rgba(0,0,0,0.2) !important;
-    }
-
-    .products-section {
-        min-height: 500px;
-        background-color: #f9f9f9;
-    }
-
-    .info-card {
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-        transition: all 0.3s ease;
-    }
-
-    .info-card:hover {
-        box-shadow: 0 5px 20px rgba(0,0,0,0.1);
-        transform: translateY(-5px);
-    }
-
-    .animate-fade-in {
-        animation: fadeIn 0.8s ease-in;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 0 0 40px 40px;
     }
 </style>
