@@ -5,55 +5,108 @@
 @inject HttpClient Http
 @inject NavigationManager NavManager
 
-<div class="container mt-4">
-    <h2 class="fw-bold mb-4">🛒 Səbətim (Database)</h2>
+<div class="container mt-4 mb-5">
+    
+    <!-- 1. BREADCRUMB -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb bg-light p-3 rounded shadow-sm border-0">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-primary">Ana Səhifə</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Alış-veriş Səbəti</li>
+        </ol>
+    </nav>
+
+    <h2 class="fw-bold mb-4"><i class="bi bi-cart3 me-2"></i>Səbətim</h2>
 
     @if (CartService.SelectedItems.Count == 0)
     {
-        <div class="alert alert-info text-center py-5">Səbətiniz boşdur.</div>
+        <!-- 2. EMPTY STATE (Səbət boşdursa) -->
+        <div class="text-center py-5 shadow-sm rounded-4 bg-white border">
+            <div class="mb-4">
+                <i class="bi bi-cart-x text-muted" style="font-size: 5rem; opacity: 0.5;"></i>
+            </div>
+            <h3 class="fw-bold text-dark">Səbətiniz hal-hazırda boşdur</h3>
+            <p class="text-muted">Görünür hələ seçim etməmisiniz. Mağazamıza baxmağa nə dərsiniz?</p>
+            <a href="/products" class="btn btn-primary btn-lg mt-3 px-5 rounded-pill shadow">
+                <i class="bi bi-bag-plus me-2"></i> Alış-verişə başla
+            </a>
+        </div>
     }
     else
     {
-        <div class="row">
+        <div class="row g-4">
+            <!-- SOL TƏRƏF: MƏHSUL SİYAHISI -->
             <div class="col-md-8">
                 @foreach (var item in CartService.SelectedItems)
                 {
-                    <div class="card mb-3 p-3 shadow-sm border-0">
+                    <div class="card mb-3 p-3 shadow-sm border-0 rounded-4 product-card-horizontal border">
                         <div class="d-flex align-items-center">
-                            <img src="@item.ImageUrl" style="width: 60px;" class="me-3" />
-                            <div class="flex-grow-1">
-                                <h6 class="mb-0">@item.ProductName</h6>
-                                <p class="mb-0 text-success">@item.Price AZN</p>
-                            </div>
-                            
-                            <!-- Sayı Artır/Azalt -->
-                            <div class="d-flex align-items-center me-3">
-                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => UpdateDbQuantity(item, -1)">-</button>
-                                <span class="mx-2 fw-bold">@item.Quantity</span>
-                                <button class="btn btn-sm btn-outline-secondary" @onclick="() => UpdateDbQuantity(item, 1)">+</button>
+                            <!-- Məhsul Şəkli -->
+                            <div class="bg-light rounded p-2 me-3" style="width: 80px; height: 80px;">
+                                <img src="@item.ImageUrl" class="img-fluid" style="max-height: 100%; object-fit: contain;" alt="@item.ProductName" />
                             </div>
 
-                            <button class="btn btn-sm btn-danger" @onclick="() => RemoveFromDb(item.ProductId)">🗑️</button>
+                            <!-- Məhsul Adı və Qiyməti -->
+                            <div class="flex-grow-1">
+                                <h6 class="fw-bold mb-1">@item.ProductName</h6>
+                                <p class="mb-0 text-success fw-bold">@item.Price.ToString("0.00") AZN</p>
+                            </div>
+                            
+                            <!-- Sayı Artır/Azalt (Sayı seçici dizaynı) -->
+                            <div class="d-flex align-items-center bg-light rounded-pill px-2 me-4 border">
+                                <button class="btn btn-sm btn-link text-dark shadow-none" @onclick="() => UpdateDbQuantity(item, -1)">
+                                    <i class="bi bi-dash-lg"></i>
+                                </button>
+                                <span class="mx-3 fw-bold">@item.Quantity</span>
+                                <button class="btn btn-sm btn-link text-dark shadow-none" @onclick="() => UpdateDbQuantity(item, 1)">
+                                    <i class="bi bi-plus-lg"></i>
+                                </button>
+                            </div>
+
+                            <!-- Silmə Düyməsi -->
+                            <button class="btn btn-outline-danger border-0 rounded-circle shadow-sm" @onclick="() => RemoveFromDb(item.ProductId)">
+                                <i class="bi bi-trash3"></i>
+                            </button>
                         </div>
                     </div>
                 }
             </div>
 
+            <!-- SAĞ TƏRƏF: SİFARİŞ XÜLASƏSİ -->
             <div class="col-md-4">
-                <div class="card p-4 bg-light shadow-sm">
-                    <h5>Sifarişin Tamamlanması</h5>
-                    <hr />
-                    <div class="mb-3">
-                        <label>Çatdırılma Ünvanı:</label>
-                        <textarea class="form-control" @bind="address"></textarea>
-                    </div>
-                    <h3 class="text-success fw-bold">Total: @CartService.GetTotal() AZN</h3>
+                <div class="card p-4 shadow border-0 rounded-4 sticky-top" style="top: 20px;">
+                    <h5 class="fw-bold mb-4">Sifarişin Xülasəsi</h5>
                     
-                    <!-- 🛑 Sənin OrdersController-in CreateOrder metodunu çağırır -->
-                    <button class="btn btn-warning w-100 fw-bold mt-3" @onclick="PlaceOrder">
-                        SİFARİŞİ VER
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Məhsul sayı:</span>
+                        <span class="fw-bold">@CartService.SelectedItems.Sum(x => x.Quantity) ədəd</span>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between mb-3 border-bottom pb-3">
+                        <span class="text-muted">Çatdırılma:</span>
+                        <span class="text-success fw-bold">Pulsuz</span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold text-muted text-uppercase">Çatdırılma Ünvanı</label>
+                        <textarea class="form-control bg-light border-0" rows="3"
+                                  placeholder="Küçə adı, bina, mənzil..." @bind="address"></textarea>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <span class="h5 mb-0 text-muted">Ümumi:</span>
+                        <span class="h3 mb-0 text-primary fw-bold">@CartService.GetTotal().ToString("0.00") AZN</span>
+                    </div>
+                    
+                    <button class="btn btn-primary btn-lg w-100 fw-bold rounded-pill shadow" @onclick="PlaceOrder">
+                        <i class="bi bi-check2-circle me-2"></i> SİFARİŞİ TAMAMLA
                     </button>
-                    <p class="mt-2 small text-muted text-center">@statusMessage</p>
+
+                    @if (!string.IsNullOrEmpty(statusMessage))
+                    {
+                        <div class="alert @(statusMessage.Contains("Uğurlu") ? "alert-success" : "alert-warning") mt-3 p-2 text-center small rounded-3">
+                            @statusMessage
+                        </div>
+                    }
                 </div>
             </div>
         </div>
@@ -61,32 +114,40 @@
 </div>
 
 @code {
-    private string address = "Bakı şəhəri, ...";
+    private string address = "";
     private string statusMessage = "";
 
-    // 1. Database-də miqdarı yenilə (PUT api/v1/cart)
     private async Task UpdateDbQuantity(CartItem item, int change)
     {
         item.Quantity += change;
         if (item.Quantity < 1) item.Quantity = 1;
-
-        // Burada sənin UpdateQuantity metoduna uyğun DTO göndərməlisən
-        // Qeyd: Səbət elementinin ID-sini (CartId) backend-dən almalısan, hələlik sadə saxlayaq.
+        
+        // Burada əslində API-ya PUT sorğusu gedib bazada da yeniləməlidir:
+        // await Http.PutAsJsonAsync($"cart/update/{item.ProductId}", item.Quantity);
+        
         StateHasChanged();
     }
 
-    // 2. Database-dən sil (DELETE api/v1/cart/{id})
     private async Task RemoveFromDb(int productId)
     {
-        // Real layihədə burada CartId ilə DELETE sorğusu göndərilir
+        // CartService.RemoveItem səni lokal (yaddaşdakı) siyahıdan silir
         CartService.RemoveItem(productId);
+        
+        // Real bazadan silmək üçün:
+        // await Http.DeleteAsync($"cart/remove/{productId}");
+        
         StateHasChanged();
     }
 
-    // 3. SİFARİŞ YARAT (POST api/v1/orders)
     private async Task PlaceOrder()
     {
-        statusMessage = "Sifariş yaradılır...";
+        if (string.IsNullOrWhiteSpace(address))
+        {
+            statusMessage = "⚠️ Zəhmət olmasa ünvanı daxil edin.";
+            return;
+        }
+
+        statusMessage = "⏳ Sifarişiniz emal olunur...";
         
         var orderRequest = new
         {
@@ -94,18 +155,26 @@
             ShippingAddress = address
         };
 
-        var response = await Http.PostAsJsonAsync("orders", orderRequest);
+        try
+        {
+            var response = await Http.PostAsJsonAsync("orders", orderRequest);
 
-        if (response.IsSuccessStatusCode)
-        {
-            statusMessage = "Uğurlu! Səbətiniz təmizləndi və sifariş yaradıldı. ✅";
-            CartService.ClearCart();
-            await Task.Delay(3000);
-            NavManager.NavigateTo("/");
+            if (response.IsSuccessStatusCode)
+            {
+                statusMessage = "✅ Uğurlu! Sifariş yaradıldı. Ana səhifəyə yönləndirilirsiniz...";
+                CartService.ClearCart();
+                StateHasChanged();
+                await Task.Delay(3000);
+                NavManager.NavigateTo("/");
+            }
+            else
+            {
+                statusMessage = "❌ Xəta! Sifariş yaradıla bilmədi.";
+            }
         }
-        else
+        catch
         {
-            statusMessage = "Xəta baş verdi. Səbətiniz boş ola bilər.";
+            statusMessage = "❌ Serverlə bağlantı kəsildi.";
         }
     }
 }

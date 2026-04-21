@@ -1,6 +1,12 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using ToyStore.Frontend.Models
+@inject HttpClient Http
+@inject NavigationManager NavManager
+
+<div class="top-row ps-3 navbar navbar-dark bg-primary shadow-sm">
     <div class="container-fluid">
-        <a class="navbar-brand" href="">ToyStore.Frontend</a>
+        <a class="navbar-brand fw-bold" href="">
+            <i class="bi bi-controller me-2"></i> ToyStore
+        </a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
             <span class="navbar-toggler-icon"></span>
         </button>
@@ -8,20 +14,73 @@
 </div>
 
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav flex-column">
+    
+    <!-- 🔍 AXTARIŞ SAHƏSİ 🔍 -->
+    <div class="px-3 py-3 position-relative" @onclick:stopPropagation="true">
+        <div class="input-group input-group-sm border rounded-pill overflow-hidden bg-white shadow-sm">
+            <span class="input-group-text bg-white border-0">
+                <i class="bi bi-search text-muted"></i>
+            </span>
+            <input type="text" class="form-control border-0 shadow-none text-dark"
+                   placeholder="Oyuncaq axtar..."
+                   @bind="searchText"
+                   @oninput="HandleSearchInput" />
+        </div>
+
+        @if (searchResults != null && searchResults.Any())
+        {
+            <!-- Axtarış Nəticələri Pəncərəsi -->
+            <div class="live-search-dropdown shadow-lg rounded-3 border animate__animated animate__fadeIn">
+                @foreach (var p in searchResults)
+                {
+                    <a href="/product/@p.Id" class="search-result-item" @onclick="ClearSearch">
+                        <img src="@p.ImageUrl" alt="@p.Name" />
+                        <div class="text-truncate">
+                            <div class="fw-bold small text-dark text-truncate">@p.Name</div>
+                            <div class="text-success fw-bold extra-small">@p.Price.ToString("0.00") AZN</div>
+                        </div>
+                    </a>
+                }
+                <div class="p-2 text-center border-top bg-light">
+                    <a href="/products" class="small text-decoration-none" @onclick="ClearSearch">Hamısına bax</a>
+                </div>
+            </div>
+        }
+    </div>
+
+    <nav class="nav flex-column mt-2">
+        <!-- ANA SƏHİFƏ -->
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+            <NavLink class="nav-link rounded-3" href="" Match="NavLinkMatch.All">
+                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Ana Səhifə
             </NavLink>
         </div>
+
+        <!-- OYUNCAQLAR -->
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="counter">
-                <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Counter
+            <NavLink class="nav-link rounded-3" href="products">
+                <span class="bi bi-shop" aria-hidden="true"></span> Oyuncaqlar
             </NavLink>
         </div>
+
+        <!-- BRENDLƏR (Bura düzəldildi: Artıq /brands-a gedir) -->
         <div class="nav-item px-3">
-            <NavLink class="nav-link" href="weather">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Weather
+            <NavLink class="nav-link rounded-3" href="brands">
+                <span class="bi bi-tag-fill text-white" aria-hidden="true"></span> Brendlər
+            </NavLink>
+        </div>
+
+        <!-- İSTƏK SİYAHISI -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link rounded-3" href="wishlist">
+                <span class="bi bi-heart-fill text-white" aria-hidden="true"></span> İstək Siyahısı
+            </NavLink>
+        </div>
+
+        <!-- SƏBƏTİM -->
+        <div class="nav-item px-3">
+            <NavLink class="nav-link rounded-3" href="cart">
+                <span class="bi bi-cart-fill text-white" aria-hidden="true"></span> Səbətim
             </NavLink>
         </div>
     </nav>
@@ -29,11 +88,105 @@
 
 @code {
     private bool collapseNavMenu = true;
+    private string searchText = "";
+    private List<ProductDto> allProducts = new();
+    private List<ProductDto> searchResults = new();
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
-    private void ToggleNavMenu()
+    private void ToggleNavMenu() => collapseNavMenu = !collapseNavMenu;
+
+    protected override async Task OnInitializedAsync()
     {
-        collapseNavMenu = !collapseNavMenu;
+        try
+        {
+            // Bütün məhsulları API-dan bir dəfə çəkirik
+            allProducts = await Http.GetFromJsonAsync<List<ProductDto>>("products") ?? new();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("API Xətası: " + ex.Message);
+        }
+    }
+
+    private void HandleSearchInput(ChangeEventArgs e)
+    {
+        searchText = e.Value?.ToString() ?? "";
+
+        if (string.IsNullOrWhiteSpace(searchText) || searchText.Length < 2)
+        {
+            searchResults = new();
+            return;
+        }
+
+        searchResults = allProducts
+            .Where(p => p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .Take(5)
+            .ToList();
+    }
+
+    private void ClearSearch()
+    {
+        searchText = "";
+        searchResults = new();
     }
 }
+
+<style>
+    /* Vacib: Dropdown-un sol menyu daxilində gizli qalmaması üçün */
+    .nav-scrollable {
+        overflow: visible !important;
+    }
+
+    /* Live Search Dropdown Dizaynı */
+    .live-search-dropdown {
+        position: absolute;
+        top: 55px; /* Inputun tam altı */
+        left: 10px;
+        right: 10px;
+        background: white;
+        z-index: 2000; /* Digər linklərin üzərində görünsün */
+        max-height: 350px;
+        overflow-y: auto;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+    }
+
+    .search-result-item {
+        display: flex;
+        align-items: center;
+        padding: 10px 12px;
+        text-decoration: none;
+        border-bottom: 1px solid #f1f1f1;
+        transition: 0.2s;
+    }
+
+        .search-result-item:hover {
+            background: #f8f9fa;
+            color: inherit;
+        }
+
+        .search-result-item img {
+            width: 35px;
+            height: 35px;
+            object-fit: contain;
+            margin-right: 10px;
+            background: #fff;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+
+    .extra-small {
+        font-size: 0.75rem;
+    }
+
+    /* Linklərin rəngi */
+    .nav-link {
+        color: rgba(255,255,255,0.8) !important;
+    }
+
+        .nav-link:hover, .nav-link.active {
+            color: #fff !important;
+            background: rgba(255,255,255,0.1);
+        }
+</style>

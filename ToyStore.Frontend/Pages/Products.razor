@@ -19,106 +19,157 @@
 }
 
 <div class="container-fluid mt-2 mb-5 px-lg-5">
-    <!-- Başlıq Hissəsi -->
-    <div class="d-flex justify-content-between align-items-center mb-4 border-bottom pb-3">
-        <div>
-            <h2 class="fw-bold mb-0">
-                @if (isWishlistMode)
-                {
-                    <i class="bi bi-heart-fill text-danger me-2"></i> <span>Seçilmiş Oyuncaqlar</span>
-                }
-                else
-                {
-                    <i class="bi bi-shop text-primary me-2"></i> <span>@(BrandId.HasValue ? "Brend Məhsulları" : "Bütün Oyuncaqlar")</span>
-                }
-            </h2>
-            @if (isWishlistMode || BrandId.HasValue)
-            {
-                <button class="btn btn-link p-0 text-muted mt-1 text-decoration-none shadow-none" @onclick='() => NavManager.NavigateTo("/products")'>
-                    <i class="bi bi-arrow-left"></i> Bütün məhsullara qayıt
-                </button>
-            }
-        </div>
-        <div class="text-end">
-            <span class="badge rounded-pill bg-primary px-3 py-2 fs-6 shadow-sm">
-                Cəmi: <b>@(filteredProducts?.Count ?? 0)</b> məhsul
-            </span>
-        </div>
-    </div>
+    
+    <!-- 1. BREADCRUMB -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb bg-light p-3 rounded-4 shadow-sm border-0">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-primary">Ana Səhifə</a></li>
+            <li class="breadcrumb-item active">@(isWishlistMode ? "İstək Siyahısı" : "Oyuncaqlar")</li>
+        </ol>
+    </nav>
 
-    <!-- 🔍 FİLTRLƏR (Dark Mode uyğun) 🔍 -->
-    <div class="card shadow-sm border-0 rounded-4 p-4 mb-5 filter-card border">
-        <div class="row g-3">
-            <div class="col-md-4">
-                <label class="form-label fw-bold small opacity-75">Axtarış</label>
-                <div class="input-group">
-                    <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search text-primary"></i></span>
-                    <input type="text" class="form-control border-start-0 shadow-none bg-transparent" 
-                           placeholder="Oyuncaq adı..." @bind="searchText" @bind:event="oninput" @onchange="ApplyFilters" />
-                </div>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-bold small opacity-75">Qiymət (AZN)</label>
-                <div class="input-group">
-                    <input type="number" class="form-control shadow-none bg-transparent" placeholder="Min" @bind="minPrice" />
-                    <span class="input-group-text bg-transparent border-0 px-1">-</span>
-                    <input type="number" class="form-control shadow-none bg-transparent" placeholder="Max" @bind="maxPrice" />
-                    <button class="btn btn-primary px-3" @onclick="ApplyFilters"><i class="bi bi-funnel-fill"></i></button>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label fw-bold small">Sıralama</label>
-                <select class="form-select shadow-none bg-transparent" @onchange="(ChangeEventArgs e) => { sortBy = e.Value.ToString(); ApplyFilters(); }">
-                    <option value="name">Ada Görə (A-Z)</option>
-                    <option value="price-asc">Ucuzdan Bahalıya</option>
-                    <option value="price-desc">Bahalıdan Ucuza</option>
-                </select>
-            </div>
-        </div>
-    </div>
+    <div class="row">
+        <!-- 📂 2. SOL TƏRƏF: SÜZGƏC SİDEBAR (Step 1) -->
+        <aside class="col-lg-3 pe-lg-4 mb-4">
+            <div class="sticky-top" style="top: 90px;">
+                <div class="card border-0 shadow-sm rounded-4 p-4 filter-sidebar">
+                    <h5 class="fw-bold mb-4 d-flex align-items-center">
+                        <i class="bi bi-sliders2-vertical me-2 text-primary"></i> Süzgəclər
+                    </h5>
 
-    @if (allProducts == null)
-    {
-        <div class="text-center py-5"><div class="spinner-grow text-primary"></div><p class="mt-2 text-muted">Məhsullar gətirilir...</p></div>
-    }
-    else if (filteredProducts.Count == 0)
-    {
-        <div class="alert alert-info text-center py-5 rounded-4 border-0 shadow-sm">
-            <i class="bi bi-emoji-frown fs-1 d-block mb-3"></i>
-            <h5>@(isWishlistMode ? "Seçilmiş məhsulunuz yoxdur." : "Heç bir oyuncaq tapılmadı.")</h5>
-            <button class="btn btn-primary mt-2 rounded-pill px-4" @onclick='() => NavManager.NavigateTo("/products")'>Mağazaya qayıt</button>
-        </div>
-    }
-    else
-    {
-        <div class="row row-cols-1 row-cols-md-3 row-cols-xl-4 g-4">
-            @foreach (var item in filteredProducts)
-            {
-                <div class="col">
-                    <div class="card h-100 shadow-sm border-0 product-card overflow-hidden" @onclick='() => NavManager.NavigateTo($"/product/{item.Id}")'>
-                        
-                        <button class="wishlist-btn" @onclick:stopPropagation="true" @onclick="() => HandleToggleWishlist(item)">
-                            <i class="bi @(WishlistService.IsInWishlist(item.Id) ? "bi-heart-fill text-danger" : "bi-heart")"></i>
-                        </button>
-
-                        <div class="card-img-container p-4 d-flex align-items-center justify-content-center bg-light" style="height:200px;">
-                            <img src="@item.ImageUrl" class="card-img-top img-fluid" style="max-height:100%; object-fit:contain;" alt="@item.Name">
+                    <!-- Axtarış -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold opacity-75">Məhsul Adı</label>
+                        <div class="input-group input-group-sm bg-light rounded-pill px-2 border">
+                            <span class="input-group-text bg-transparent border-0"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control bg-transparent border-0 shadow-none"
+                                   placeholder="Axtar..." @bind="searchText" @bind:event="oninput" @onchange="ApplyFilters" />
                         </div>
+                    </div>
 
-                        <div class="card-body p-4 d-flex flex-column">
-                            <h6 class="fw-bold text-truncate mb-3">@item.Name</h6>
-                            <div class="d-flex justify-content-between align-items-center mt-auto pt-3 border-top">
-                                <span class="h5 mb-0 text-primary fw-bold">@item.Price.ToString("0.00") AZN</span>
-                                <button class="btn btn-primary rounded-circle shadow" style="width:42px; height:42px;" @onclick:stopPropagation="true" @onclick="() => AddToCart(item)">
-                                    <i class="bi bi-cart-plus fs-5"></i>
-                                </button>
+                    <!-- Qiymət -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold opacity-75">Qiymət Aralığı</label>
+                        <div class="d-flex align-items-center gap-2">
+                            <input type="number" class="form-control form-control-sm rounded-3" placeholder="Min" @bind="minPrice" />
+                            <span class="text-muted">-</span>
+                            <input type="number" class="form-control form-control-sm rounded-3" placeholder="Max" @bind="maxPrice" />
+                        </div>
+                        <button class="btn btn-outline-primary btn-sm w-100 mt-2 rounded-pill" @onclick="ApplyFilters">Tətbiq et</button>
+                    </div>
+
+                    <!-- Yaş Qrupu -->
+                    <div class="mb-4">
+                        <label class="form-label small fw-bold opacity-75">Yaş Seçimi</label>
+                        <div class="mt-2">
+                            <div class="form-check mb-1 small">
+                                <input class="form-check-input" type="checkbox" id="age1" @onchange="ApplyFilters">
+                                <label class="form-check-label" for="age1">👶 0-3 Yaş</label>
+                            </div>
+                            <div class="form-check mb-1 small">
+                                <input class="form-check-input" type="checkbox" id="age2" @onchange="ApplyFilters">
+                                <label class="form-check-label" for="age2">🧒 3-6 Yaş</label>
+                            </div>
+                            <div class="form-check mb-1 small">
+                                <input class="form-check-input" type="checkbox" id="age3" @onchange="ApplyFilters">
+                                <label class="form-check-label" for="age3">🚀 6+ Yaş</label>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Sıralama -->
+                    <div class="mb-2">
+                        <label class="form-label small fw-bold opacity-75">Sıralama</label>
+                        <select class="form-select form-select-sm rounded-3" @onchange="(ChangeEventArgs e) => { sortBy = e.Value.ToString(); ApplyFilters(); }">
+                            <option value="name">Ada Görə (A-Z)</option>
+                            <option value="price-asc">Ucuzdan Bahalıya</option>
+                            <option value="price-desc">Bahalıdan Ucuza</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 🧸 3. SAĞ TƏRƏF: MƏHSULLAR -->
+        <main class="col-lg-9">
+            <!-- Başlıq Hissəsi -->
+            <div class="d-flex justify-content-between align-items-center mb-4 bg-white p-3 rounded-4 border shadow-sm">
+                <h3 class="fw-bold mb-0 fs-4">
+                    @if (isWishlistMode)
+                    {
+                        <span class="text-danger"><i class="bi bi-heart-fill"></i> Sevdiklərim</span>
+                    }
+                    else
+                    {
+
+                        <span><i class="bi bi-grid-fill text-primary"></i> Məhsullar</span>
+                    }
+                </h3>
+                <span class="badge bg-soft-primary text-primary px-3 py-2 rounded-pill">
+                    @filteredProducts?.Count məhsul tapıldı
+                </span>
+            </div>
+
+            @if (allProducts == null)
+            {
+                <!-- SKELETON SCREEN -->
+                <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                    @for (int i = 0; i < 6; i++)
+                    {
+                        <div class="col">
+                            <div class="card h-100 border-0 shadow-sm p-3 rounded-4">
+                                <div class="skeleton mb-3" style="height: 200px; width: 100%;"></div>
+                                <div class="skeleton mb-2" style="height: 20px; width: 80%;"></div>
+                                <div class="skeleton" style="height: 40px; width: 100%;"></div>
+                            </div>
+                        </div>
+                    }
                 </div>
             }
-        </div>
-    }
+            else if (filteredProducts.Count == 0)
+            {
+                <!-- EMPTY STATE -->
+                <div class="text-center py-5 rounded-4 border bg-white shadow-sm mt-4">
+                    <i class="bi bi-search-heart text-muted display-1 opacity-25"></i>
+                    <h4 class="fw-bold mt-3">Heç bir oyuncaq tapılmadı</h4>
+                    <button class="btn btn-primary mt-2 rounded-pill px-4" @onclick='() => NavManager.NavigateTo("/products")'>Hamısına bax</button>
+                </div>
+            }
+            else
+            {
+                <!-- REAL MƏHSUL KARTLARI (Step 5: Animasiyalı) -->
+                <div class="row row-cols-1 row-cols-md-2 row-cols-xl-3 g-4">
+                    @foreach (var item in filteredProducts)
+                    {
+                        <div class="col product-item-anim">
+                            <div class="card h-100 shadow-sm border-0 product-card-modern overflow-hidden" @onclick='() => NavManager.NavigateTo($"/product/{item.Id}")'>
+                                
+                                <!-- Wishlist (Üst küncdə sabit) -->
+                                <button class="modern-wishlist-btn" @onclick:stopPropagation="true" @onclick="() => HandleToggleWishlist(item)">
+                                    <i class="bi @(WishlistService.IsInWishlist(item.Id) ? "bi-heart-fill text-danger" : "bi-heart")"></i>
+                                </button>
+
+                                <div class="card-img-container p-4 d-flex align-items-center justify-content-center bg-light-soft">
+                                    <img src="@item.ImageUrl" class="card-img-top img-fluid main-img" alt="@item.Name">
+                                </div>
+
+                                <div class="card-body p-4 d-flex flex-column">
+                                    <h6 class="fw-bold text-truncate mb-2 text-dark">@item.Name</h6>
+                                    <div class="d-flex justify-content-between align-items-center mt-auto">
+                                        <span class="h5 mb-0 text-success fw-bold">@item.Price.ToString("0.00") AZN</span>
+                                        <button class="btn btn-primary rounded-circle shadow p-0 d-flex align-items-center justify-content-center"
+                                                style="width:40px; height:40px;" @onclick:stopPropagation="true" @onclick="() => AddToCart(item)">
+                                            <i class="bi bi-cart-plus fs-5"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </main>
+    </div>
 </div>
 
 @code {
@@ -137,36 +188,19 @@
     {
         ThemeService.OnThemeChanged += RefreshUI;
         WishlistService.OnWishlistChanged += RefreshUI;
-        
-        // 🛑 Naviqasiya dəyişəndə səhifəni məcburi yenilə
         NavManager.LocationChanged += HandleLocationChanged;
         
         await LoadData();
         UpdateMode();
     }
 
-    protected override void OnParametersSet()
-    {
-        UpdateMode();
-    }
-
-    private void HandleLocationChanged(object sender, LocationChangedEventArgs e)
-    {
-        UpdateMode();
-        StateHasChanged();
-    }
-
-    private void UpdateMode()
-    {
-        isWishlistMode = NavManager.Uri.ToLower().Contains("/wishlist");
-        ApplyFilters();
-    }
+    private void HandleLocationChanged(object sender, LocationChangedEventArgs e) { UpdateMode(); StateHasChanged(); }
+    private void UpdateMode() { isWishlistMode = NavManager.Uri.ToLower().Contains("/wishlist"); ApplyFilters(); }
 
     private async Task LoadData()
     {
-        try {
-            allProducts = await Http.GetFromJsonAsync<List<ProductDto>>("products");
-        } catch { allProducts = new(); }
+        try { allProducts = await Http.GetFromJsonAsync<List<ProductDto>>("products"); }
+        catch { allProducts = new(); }
     }
 
     private void RefreshUI() => InvokeAsync(StateHasChanged);
@@ -206,6 +240,6 @@
     {
         ThemeService.OnThemeChanged -= RefreshUI;
         WishlistService.OnWishlistChanged -= RefreshUI;
-        NavManager.LocationChanged -= HandleLocationChanged; // Unsubscribe
+        NavManager.LocationChanged -= HandleLocationChanged;
     }
 }

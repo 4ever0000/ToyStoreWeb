@@ -1,15 +1,18 @@
 ﻿@inherits LayoutComponentBase
 @using ToyStore.Frontend.Pages
 @using ToyStore.Frontend.Services
+@using ToyStore.Frontend.Models
 @inject CartService CartService
 @inject WishlistService WishlistService
 @inject ThemeService ThemeService
+@inject HttpClient Http
+@inject NavigationManager NavManager
 @implements IDisposable
 
 <div class="page">
     <main>
         <!-- 📱 ÜST MENYU (Navbar) -->
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-lg py-3">
+        <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-lg py-3 sticky-top">
             <div class="container px-lg-5">
                 <!-- Logo -->
                 <a class="navbar-brand fw-bold fs-3 d-flex align-items-center" href="/">
@@ -23,11 +26,41 @@
 
                 <!-- Menyu Linkləri -->
                 <div class="collapse navbar-collapse" id="navbarNav">
+                    
+                    <!-- 🔍 CANLI AXTARIŞ (Navbar-ın ortasında) 🔍 -->
+                    <div class="mx-auto position-relative search-box-container my-3 my-lg-0" style="width: 300px;">
+                        <div class="input-group input-group-sm bg-white rounded-pill overflow-hidden border-0 shadow-sm">
+                            <span class="input-group-text bg-white border-0"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" class="form-control border-0 shadow-none text-dark" 
+                                   placeholder="Oyuncaq axtar..." 
+                                   @bind="searchText" 
+                                   @oninput="HandleSearchInput" />
+                        </div>
+
+                        <!-- Axtarış Dropdown -->
+                        @if (searchResults != null && searchResults.Any())
+                        {
+                            <div class="global-search-dropdown shadow-lg rounded-3 border animate__animated animate__fadeIn">
+                                @foreach (var p in searchResults)
+                                {
+                                    <div class="search-item-row" @onclick="() => SelectProduct(p.Id)">
+                                        <img src="@p.ImageUrl" alt="@p.Name" />
+                                        <div class="text-truncate">
+                                            <div class="fw-bold small text-dark text-truncate">@p.Name</div>
+                                            <div class="text-success fw-bold" style="font-size: 0.75rem;">@p.Price.ToString("0.00") AZN</div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                    </div>
+
                     <div class="navbar-nav ms-auto align-items-center gap-2">
                         <NavLink class="nav-link px-3" href="/" Match="NavLinkMatch.All">Ana Səhifə</NavLink>
                         <NavLink class="nav-link px-3" href="/products">Oyuncaqlar</NavLink>
-                        <NavLink class="nav-link px-3" href="/catalog">Brendlər</NavLink>
-                        <NavLink class="nav-link px-3" href="/about">Haqqımızda</NavLink>
+                        
+                        <!-- ✅ BRENDLƏR LİNKİ DÜZƏLDİLDİ (/brands) -->
+                        <NavLink class="nav-link px-3" href="/brands">Brendlər</NavLink>
 
                         <!-- ❤️ Sevdiklərim (Wishlist) -->
                         <div class="nav-item">
@@ -79,78 +112,107 @@
             @Body
         </div>
 
-        <!-- 🤖 AI CHAT BOT KOMPONENTİ 🤖 -->
         <ChatBot />
 
         <!-- 🏢 FOOTER -->
-        <footer class="footer mt-auto py-5 border-top">
+        <footer class="footer mt-auto py-5 border-top bg-light">
             <div class="container text-center">
                 <div class="mb-3">
                     <span class="fs-4 fw-bold">ToyStore</span>
                 </div>
                 <p class="text-muted mb-0">&copy; 2024 ToyStore - Bütün hüquqlar qorunur.</p>
-                <div class="mt-2 d-flex justify-content-center gap-3">
-                    <a href="#" class="text-muted text-decoration-none small">Gizlilik siyasəti</a>
-                    <a href="#" class="text-muted text-decoration-none small">Şərtlər</a>
-                    <a href="/contact" class="text-muted text-decoration-none small">Əlaqə</a>
-                </div>
             </div>
         </footer>
     </main>
 </div>
 
 <style>
-    /* Navbar Linklərinin Hover Effekti */
-    .nav-link {
-        font-weight: 500;
-        transition: color 0.3s ease;
-    }
-    .nav-link:hover {
-        color: #667eea !important;
-    }
-
-    /* Badge tənzimləməsi */
-    .badge {
-        font-weight: 600;
-        padding: 0.35em 0.65em;
+    /* Axtarış Pəncərəsi Dizaynı */
+    .global-search-dropdown {
+        position: absolute;
+        top: 45px;
+        left: 0;
+        right: 0;
+        background: white;
+        z-index: 2000; /* Məhsul kartlarının üstündə görünsün */
+        max-height: 350px;
+        overflow-y: auto;
+        border-radius: 12px;
     }
 
-    /* Animasiyalı icon keçidi */
-    .animate-fade {
-        animation: fadeIn 0.5s ease;
+    .search-item-row {
+        display: flex;
+        align-items: center;
+        padding: 10px 15px;
+        cursor: pointer;
+        border-bottom: 1px solid #eee;
+        transition: 0.2s;
+        text-decoration: none;
     }
+
+    .search-item-row:hover { background: #f8f9fa; }
+
+    .search-item-row img {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+        margin-right: 12px;
+        background: white;
+        border-radius: 6px;
+    }
+
+    .nav-link { font-weight: 500; transition: color 0.3s ease; }
+    .nav-link:hover { color: #0d6efd !important; }
+    .animate-fade { animation: fadeIn 0.5s ease; }
     @@keyframes fadeIn {
         from { opacity: 0; transform: scale(0.8); }
         to { opacity: 1; transform: scale(1); }
     }
-
-    /* Footer dizaynı */
-    footer {
-        background-color: var(--bs-body-bg);
-    }
 </style>
 
 @code {
-    protected override void OnInitialized()
+    private string searchText = "";
+    private List<ProductDto> allProducts = new();
+    private List<ProductDto> searchResults = new();
+
+    protected override async Task OnInitializedAsync()
     {
-        // Event-lərə abunə oluruq
         CartService.OnCartChanged += RefreshUI;
         ThemeService.OnThemeChanged += RefreshUI;
         WishlistService.OnWishlistChanged += RefreshUI;
+
+        // API-dan məlumatları çəkirik
+        try {
+            allProducts = await Http.GetFromJsonAsync<List<ProductDto>>("products") ?? new();
+        } catch { }
     }
 
-    // Bütün yenilənmələri vahid metodla idarə edirik
-    private void RefreshUI()
+    private void HandleSearchInput(ChangeEventArgs e)
     {
-        StateHasChanged();
+        searchText = e.Value?.ToString() ?? "";
+        if (string.IsNullOrWhiteSpace(searchText) || searchText.Length < 2)
+        {
+            searchResults = new();
+            return;
+        }
+
+        searchResults = allProducts
+            .Where(p => p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+            .Take(6)
+            .ToList();
     }
 
-    private async Task ToggleTheme()
+    private void SelectProduct(int id)
     {
-        await ThemeService.ToggleTheme();
+        searchResults = new();
+        searchText = "";
+        NavManager.NavigateTo($"/product/{id}");
     }
 
-    // Unsubscribe (Vacibdir!)
+    private void RefreshUI() => InvokeAsync(StateHasChanged);
+
+    private async Task ToggleTheme() => await ThemeService.ToggleTheme();
+
     void IDisposable.Dispose()
     {
         CartService.OnCartChanged -= RefreshUI;
