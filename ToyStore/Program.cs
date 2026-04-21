@@ -1,5 +1,9 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using ToyStore.Data;
+using ToyStore.Middlewares;
 using ToyStore.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -9,7 +13,29 @@ builder.Services.AddControllers();
 
 // 2. Swagger/OpenAPI tənzimləmələri
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Description = "Tokeni bura yazın"
+    });
+
+    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            {
+                Reference = new Microsoft.OpenApi.Models.OpenApiReference { Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme, Id = "Bearer" }
+            },
+            new string[] {}
+        }
+    });
+});
 
 // 3. Database (DbContext) qeydiyyatı
 // appsettings.json-dakı "DefaultConnection" (localhost,1434) istifadə olunur
@@ -30,10 +56,28 @@ builder.Services.AddCors(options =>
     });
 });
 
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+        };
+    });
+
 var app = builder.Build();
 
-// 6. Middleware Sıralaması (BU ARDICILLIQ ÇOX VACİBDİR!)
+app.UseAuthentication(); // 1. Kim olduğunu yoxla
 
+app.UseAuthorization();  // 2. İcazən varmı yoxla
+// 6. Middleware Sıralaması (BU ARDICILLIQ ÇOX VACİBDİR!)
+app.UseMiddleware<ExceptionMiddleware>();
 // Swagger hər zaman görünsün (yoxlamaq asan olsun deyə if şərtindən çıxardım)
 app.UseSwagger();
 app.UseSwaggerUI(c =>

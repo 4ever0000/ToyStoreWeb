@@ -2,6 +2,7 @@
 using ToyStore.Application.DTOs.Review;
 using ToyStore.Models;
 using ToyStore.Repositories;
+using ToyStore.Application.Common.Exceptions; // Exception-lar üçün lazımdır
 
 namespace ToyStore.Controllers
 {
@@ -16,9 +17,8 @@ namespace ToyStore.Controllers
             _reviewRepo = reviewRepo;
         }
 
-
-        // Məhsula aid bütün rəyləri al
         [HttpGet("product/{productId}")]
+        [ProducesResponseType(typeof(IEnumerable<ReviewDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetByProductId(int productId)
         {
             var allReviews = await _reviewRepo.GetAllAsync();
@@ -37,10 +37,15 @@ namespace ToyStore.Controllers
             return Ok(result);
         }
 
-
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateReview(ReviewCreateDto request)
         {
+            // Validasiya yoxlaması nümunəsi:
+            if (request.Rating < 1 || request.Rating > 5)
+                throw new BadRequestException("Rating (qiymət) 1 ilə 5 arasında olmalıdır.");
+
             var newReview = new Review
             {
                 ProductId = request.ProductId,
@@ -58,13 +63,15 @@ namespace ToyStore.Controllers
                 newReview);
         }
 
-
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteReview(int id)
         {
             var review = await _reviewRepo.GetByIdAsync(id);
+
             if (review == null)
-                return NotFound(new { Message = "Rəy tapılmadı" });
+                throw new NotFoundException(nameof(Review), id);
 
             _reviewRepo.Delete(review);
             await _reviewRepo.SaveChangesAsync();

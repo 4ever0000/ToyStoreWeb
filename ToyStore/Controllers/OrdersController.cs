@@ -3,6 +3,7 @@ using ToyStore.Application.DTOs.Order;
 using ToyStore.Application.DTOs.OrderItem;
 using ToyStore.Models;
 using ToyStore.Repositories;
+using ToyStore.Application.Common.Exceptions; // Özəl exception-lar üçün
 
 namespace ToyStore.Controllers
 {
@@ -27,9 +28,8 @@ namespace ToyStore.Controllers
             _productRepo = productRepo;
         }
 
-
-        // ✅ İstifadəçinin bütün sifarişləri
         [HttpGet("user/{userId}")]
+        [ProducesResponseType(typeof(IEnumerable<OrderDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetUserOrders(int userId)
         {
             var allOrders = await _orderRepo.GetAllAsync();
@@ -48,11 +48,15 @@ namespace ToyStore.Controllers
             return Ok(result);
         }
 
-
-        // ✅ Sifariş daxilindəki məhsullar
         [HttpGet("{id}/items")]
+        [ProducesResponseType(typeof(IEnumerable<OrderItemDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOrderItems(int id)
         {
+            // Sifarişin özünün varlığını yoxlamaq yaxşı olar
+            var order = await _orderRepo.GetByIdAsync(id);
+            if (order == null) throw new NotFoundException(nameof(Order), id);
+
             var allItems = await _orderItemRepo.GetAllAsync();
             var orderItems = allItems.Where(i => i.OrderId == id).ToList();
 
@@ -67,20 +71,17 @@ namespace ToyStore.Controllers
             return Ok(result);
         }
 
-
-        // ✅ ƏSAS METOD: Səbətdən tam sifariş yarat
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateOrder(OrderCreateDto request)
         {
-            // 1. Səbəti al
             var allCart = await _cartRepo.GetAllAsync();
             var userCartItems = allCart.Where(c => c.UserId == request.UserId).ToList();
 
             if (!userCartItems.Any())
-                return BadRequest(new { Message = "Səbət boşdur, sifariş yaradıla bilməz" });
+                throw new BadRequestException("Səbət boşdur, sifariş yaradıla bilməz.");
 
-
-            // 2. Yeni boş sifariş yarat
             var newOrder = new Order
             {
                 UserId = request.UserId,
@@ -93,8 +94,6 @@ namespace ToyStore.Controllers
             await _orderRepo.AddAsync(newOrder);
             await _orderRepo.SaveChangesAsync();
 
-
-            // 3. Bütün səbət məhsullarını sifarişə köçür, həqiqi qiyməti çək
             decimal totalSum = 0;
             var allProducts = await _productRepo.GetAllAsync();
 
@@ -102,7 +101,6 @@ namespace ToyStore.Controllers
             {
                 var product = allProducts.FirstOrDefault(p => p.Id == cartItem.ProductId);
 
-                // Əgər məhsul artıq silinibsə
                 if (product == null || !product.Is_active)
                     continue;
 
@@ -118,18 +116,14 @@ namespace ToyStore.Controllers
                 await _orderItemRepo.AddAsync(orderItem);
             }
 
-            // Sifariş ümumi məbləğini yadda saxla
             newOrder.TotalAmount = totalSum;
             await _orderRepo.SaveChangesAsync();
 
-
-            // 4. Səbəti tam təmizlə
             foreach (var cartItem in userCartItems)
             {
                 _cartRepo.Delete(cartItem);
             }
             await _cartRepo.SaveChangesAsync();
-
 
             return Ok(new
             {
@@ -139,15 +133,15 @@ namespace ToyStore.Controllers
             });
         }
 
-
-        // ✅ Sifariş statusunu dəyiş (admin üçün)
         [HttpPut("{id}/status")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> ChangeOrderStatus(int id, [FromBody] string newStatus)
         {
             var order = await _orderRepo.GetByIdAsync(id);
 
             if (order == null)
-                return NotFound(new { Message = "Belə sifariş mövcud deyil" });
+                throw new NotFoundException(nameof(Order), id);
 
             order.Status = newStatus;
             await _orderRepo.SaveChangesAsync();
@@ -155,15 +149,15 @@ namespace ToyStore.Controllers
             return NoContent();
         }
 
-
-        // ✅ Sifarişi ləğv et
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CancelOrder(int id)
         {
             var order = await _orderRepo.GetByIdAsync(id);
 
             if (order == null)
-                return NotFound();
+                throw new NotFoundException(nameof(Order), id);
 
             order.Status = "Müştəri tərəfindən ləğv edildi";
             await _orderRepo.SaveChangesAsync();

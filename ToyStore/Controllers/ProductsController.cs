@@ -2,6 +2,7 @@
 using ToyStore.Application.DTOs.Product;
 using ToyStore.Models;
 using ToyStore.Repositories;
+using ToyStore.Application.Common.Exceptions; // 1. Exception-ları istifadə etmək üçün əlavə edildi
 
 namespace ToyStore.Controllers
 {
@@ -16,8 +17,8 @@ namespace ToyStore.Controllers
             _productRepo = productRepo;
         }
 
-        
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<ProductDto>), StatusCodes.Status200OK)] // Swagger üçün
         public async Task<IActionResult> GetAllProducts()
         {
             var products = await _productRepo.GetAllAsync();
@@ -40,10 +41,15 @@ namespace ToyStore.Controllers
         }
 
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ProductDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)] // Swagger-də 404 görünməsi üçün
         public async Task<IActionResult> GetProductById(int id)
         {
             var product = await _productRepo.GetByIdAsync(id);
-            if (product == null || !product.Is_active) return NotFound(new { Message = "Məhsul tapılmadı" });
+
+            // "return NotFound" əvəzinə öz yazdığımız Exception-ı istifadə edirik
+            if (product == null || !product.Is_active)
+                throw new NotFoundException(nameof(Product), id);
 
             return Ok(new ProductDto
             {
@@ -60,6 +66,8 @@ namespace ToyStore.Controllers
         }
 
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateProduct(ProductCreateDto request)
         {
             var product = new Product
@@ -82,10 +90,14 @@ namespace ToyStore.Controllers
         }
 
         [HttpPut]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateProduct(ProductUpdateDto request)
         {
             var product = await _productRepo.GetByIdAsync(request.Id);
-            if (product == null) return NotFound();
+
+            if (product == null)
+                throw new NotFoundException(nameof(Product), request.Id);
 
             product.Name = request.Name;
             product.Price = request.Price;
@@ -101,10 +113,14 @@ namespace ToyStore.Controllers
         }
 
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteProduct(int id)
         {
             var product = await _productRepo.GetByIdAsync(id);
-            if (product == null) return NotFound();
+
+            if (product == null)
+                throw new NotFoundException(nameof(Product), id);
 
             product.Is_active = false;
             await _productRepo.SaveChangesAsync();

@@ -2,6 +2,7 @@
 using ToyStore.Application.DTOs.Brand;
 using ToyStore.Models;
 using ToyStore.Repositories;
+using ToyStore.Application.Common.Exceptions; // Exception-lar üçün lazımdır
 
 namespace ToyStore.Controllers
 {
@@ -11,54 +12,50 @@ namespace ToyStore.Controllers
     {
         private readonly IGenericRepository<Brand> _brandRepository;
 
-        // Constructor injection - düzgün üsul
         public BrandsController(IGenericRepository<Brand> brandRepository)
         {
             _brandRepository = brandRepository;
         }
 
-
         [HttpGet]
+        [ProducesResponseType(typeof(IEnumerable<BrandDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetAllBrands()
         {
             var brands = await _brandRepository.GetAllAsync();
 
-            List<BrandDto> result = new List<BrandDto>();
-
-            foreach (var brand in brands)
+            // Select istifadə edərək kodu daha da qısaltdım (foreach ilə eyni işi görür)
+            var result = brands.Select(brand => new BrandDto
             {
-                result.Add(new BrandDto
-                {
-                    Id = brand.Id,
-                    Name = brand.Name
-                });
-            }
+                Id = brand.Id,
+                Name = brand.Name
+            }).ToList();
 
             return Ok(result);
         }
 
-
         [HttpGet("{id}")]
+        [ProducesResponseType(typeof(BrandDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetBrandById(int id)
         {
             var brand = await _brandRepository.GetByIdAsync(id);
 
             if (brand == null)
             {
-                return NotFound(new { Message = "Brend tapılmadı" });
+                // Artıq manual mesaj yazmağa ehtiyac yoxdur, Exception klası bunu edir
+                throw new NotFoundException(nameof(Brand), id);
             }
 
-            BrandDto dto = new BrandDto
+            return Ok(new BrandDto
             {
                 Id = brand.Id,
                 Name = brand.Name
-            };
-
-            return Ok(dto);
+            });
         }
 
-
         [HttpPost]
+        [ProducesResponseType(StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateBrand(BrandCreateDto request)
         {
             Brand newBrand = new Brand
@@ -72,23 +69,25 @@ namespace ToyStore.Controllers
             return CreatedAtAction(nameof(GetBrandById), new { id = newBrand.Id }, newBrand);
         }
 
-
         [HttpPut("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateBrand(int id, BrandUpdateDto request)
         {
             if (id != request.Id)
             {
-                return BadRequest(new { Message = "Uyğunsuz ID" });
+                // BadRequestException istifadə edirik
+                throw new BadRequestException("Gömndərilən ID ilə obyektdəki ID uyğun gəlmir.");
             }
 
             var existBrand = await _brandRepository.GetByIdAsync(id);
 
             if (existBrand == null)
             {
-                return NotFound(new { Message = "Brend tapılmadı" });
+                throw new NotFoundException(nameof(Brand), id);
             }
 
-            // Yalnız dəyişən sahələri yaz
             existBrand.Name = request.Name;
 
             _brandRepository.Update(existBrand);
@@ -97,15 +96,16 @@ namespace ToyStore.Controllers
             return NoContent();
         }
 
-
         [HttpDelete("{id}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteBrand(int id)
         {
             var brand = await _brandRepository.GetByIdAsync(id);
 
             if (brand == null)
             {
-                return NotFound(new { Message = "Brend tapılmadı" });
+                throw new NotFoundException(nameof(Brand), id);
             }
 
             _brandRepository.Delete(brand);
