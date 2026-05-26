@@ -1,0 +1,228 @@
+﻿@inject UserStateService UserState
+@inject IJSRuntime JS
+
+@if (isVisible)
+{
+    <div class="wheel-overlay shadow-lg">
+        <div class="wheel-container animate__animated animate__zoomIn">
+            <button class="close-wheel" @onclick="Close">&times;</button>
+            <h2 class="text-center fw-bold mb-4 text-dark">Bəxtini Sına! 🎉</h2>
+
+            <div class="wheel-box">
+                <div class="wheel-pointer"></div>
+                <div class="wheel @(isSpinning ? "spinning" : "")" style="transform: rotate(@(rotation)deg)">
+                    <div class="segment s1"><span>50 PTS</span></div>
+                    <div class="segment s2"><span>10 PTS</span></div>
+                    <div class="segment s3"><span>HƏDİYYƏ</span></div>
+                    <div class="segment s4"><span>20 PTS</span></div>
+                    <div class="segment s5"><span>YENİDƏN</span></div>
+                    <div class="segment s6"><span>100 PTS</span></div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <button class="btn btn-warning btn-lg rounded-pill fw-bold shadow-sm px-5"
+                        @onclick="Spin" disabled="@isSpinning">
+                    @(isSpinning ? "Fırlanır..." : "FIRLAT!")
+                </button>
+            </div>
+
+            @if (!string.IsNullOrEmpty(resultMessage))
+            {
+                <div class="result-box animate__animated animate__bounceIn mt-3">
+                    <p class="result-text">@resultMessage</p>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<style>
+    .wheel-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        background: rgba(0,0,0,0.85);
+        z-index: 9999; /* 👈 Navbar və Sidebar-dan üstdə olması üçün */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(10px);
+    }
+
+    .wheel-container {
+        background: white;
+        padding: 40px;
+        border-radius: 40px;
+        position: relative;
+        width: 450px;
+        box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        border: 5px solid #FFD700;
+    }
+
+    .wheel-box {
+        position: relative;
+        width: 320px;
+        height: 320px;
+        margin: 0 auto;
+    }
+
+    .wheel {
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        border: 8px solid #333;
+        position: relative;
+        overflow: hidden;
+        transition: transform 4s cubic-bezier(0.15, 0, 0.15, 1);
+    }
+
+    .wheel-pointer {
+        position: absolute;
+        top: -15px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 40px;
+        height: 40px;
+        background: #e74c3c;
+        clip-path: polygon(50% 100%, 0 0, 100% 0);
+        z-index: 100;
+        filter: drop-shadow(0 2px 5px rgba(0,0,0,0.5));
+    }
+
+    .segment {
+        position: absolute;
+        width: 50%;
+        height: 50%;
+        transform-origin: 100% 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 14px;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+
+    .s1 {
+        background: #FFD700;
+        transform: rotate(0deg) skewY(-30deg);
+    }
+
+    .s2 {
+        background: #8B4513;
+        transform: rotate(60deg) skewY(-30deg);
+    }
+
+    .s3 {
+        background: #FF4500;
+        transform: rotate(120deg) skewY(-30deg);
+    }
+
+    .s4 {
+        background: #2E8B57;
+        transform: rotate(180deg) skewY(-30deg);
+    }
+
+    .s5 {
+        background: #4169E1;
+        transform: rotate(240deg) skewY(-30deg);
+    }
+
+    .s6 {
+        background: #9400D3;
+        transform: rotate(300deg) skewY(-30deg);
+    }
+
+    .segment span {
+        transform: skewY(30deg) rotate(30deg);
+        position: absolute;
+        right: 15px;
+        top: 45px;
+        white-space: nowrap;
+    }
+
+    .close-wheel {
+        position: absolute;
+        top: 20px;
+        right: 25px;
+        border: none;
+        background: #eee;
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        font-size: 25px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: 0.3s;
+    }
+
+        .close-wheel:hover {
+            background: #ddd;
+        }
+
+    .result-box {
+        background: #fff8e1;
+        padding: 15px;
+        border-radius: 15px;
+        border: 2px dashed #f39c12;
+    }
+
+    .result-text {
+        text-align: center;
+        font-weight: bold;
+        font-size: 1.3rem;
+        color: #d35400;
+        margin: 0;
+    }
+</style>
+
+@code {
+    private bool isVisible = false;
+    private bool isSpinning = false;
+    private int rotation = 0;
+    private string resultMessage = "";
+
+    public void Show()
+    {
+        isVisible = true;
+        resultMessage = ""; // Hər dəfə açılanda köhnə mesajı təmizləyirik
+        StateHasChanged();
+    }
+
+    private void Close() { if (!isSpinning) isVisible = false; }
+
+    private async Task Spin()
+    {
+        if (isSpinning) return;
+
+        isSpinning = true;
+        resultMessage = "";
+
+        Random rnd = new Random();
+        // Daha real fırlanma üçün (ən az 5 tam dövr + təsadüfi bucaq)
+        int extraRotation = rnd.Next(1800, 3600);
+        rotation += extraRotation;
+
+        StateHasChanged(); // Fırlanma animasiyasını başlatmaq üçün
+
+        await Task.Delay(4000); 
+        isSpinning = false;
+
+        
+        int finalAngle = (rotation % 360);
+
+        
+        if (finalAngle >= 0 && finalAngle < 60) { UserState.AddPoints(50); resultMessage = "Təbriklər! 50 ToyPoints! 🪙"; }
+        else if (finalAngle >= 60 && finalAngle < 120) { UserState.AddPoints(100); resultMessage = "MÖHTƏŞƏM! 100 ToyPoints! 👑"; }
+        else if (finalAngle >= 120 && finalAngle < 180) { resultMessage = "Yenidən sına! 🔄"; }
+        else if (finalAngle >= 180 && finalAngle < 240) { UserState.AddPoints(20); resultMessage = "20 ToyPoints qazandın! 🚀"; }
+        else if (finalAngle >= 240 && finalAngle < 300) { resultMessage = "Sənə kiçik bir hədiyyə! 🎁"; }
+        else { UserState.AddPoints(10); resultMessage = "10 ToyPoints! 😊"; }
+
+        StateHasChanged();
+    }
+}

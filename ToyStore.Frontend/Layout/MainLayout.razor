@@ -5,39 +5,100 @@
 @inject CartService CartService
 @inject WishlistService WishlistService
 @inject ThemeService ThemeService
+@inject UserStateService UserState
 @inject HttpClient Http
 @inject NavigationManager NavManager
 @implements IDisposable
 
-<div class="page">
+<div class="page @(ThemeService.IsDarkMode ? "dark-mode" : "")">
+
+    @* 1. MODERN SİDEBAR (PREMIUM DESIGN) *@
+    <div class="sidebar-panel @(isMenuOpen ? "open" : "")">
+        <div class="sidebar-header">
+            @* Bağlama Düyməsi *@
+            <button class="close-sidebar-btn" @onclick="ToggleMenu">
+                <i class="bi bi-x-lg"></i>
+            </button>
+
+            @* Profil Hissəsi *@
+            <div class="user-profile-section text-center">
+                <div class="avatar-container">
+                    <img src="images/user-avatar.png" class="avatar-img" />
+                    <div class="online-status"></div>
+                </div>
+                @* 👤 BURADA ARTIQ REAL AD GÖRSƏNƏCƏK *@
+                <h5 class="user-name">@UserState.UserName</h5>
+                <div class="toy-points-badge">
+                    <i class="bi bi-coin"></i> @UserState.ToyPoints ToyPoints
+                </div>
+            </div>
+        </div>
+
+        <nav class="sidebar-menu">
+            <div class="menu-label">Hesabım</div>
+            <a href="/profile" class="menu-item" @onclick="ToggleMenu">
+                <i class="bi bi-person-circle text-primary"></i> <span>Profilim</span>
+            </a>
+            <a href="/orderhistory" class="menu-item" @onclick="ToggleMenu">
+                <i class="bi bi-bag-check text-success"></i> <span>Sifarişlərim</span>
+            </a>
+            <a href="/wishlist" class="menu-item" @onclick="ToggleMenu">
+                <i class="bi bi-heart text-danger"></i> <span>Sevdiklərim</span>
+            </a>
+
+            <div class="menu-divider" style="height: 1px; background: rgba(0,0,0,0.05); margin: 15px 0;"></div>
+
+            <div class="menu-label">Əyləncə</div>
+            @* 🎁 ŞANS ÇARXI DÜYMƏSİ *@
+            <a href="javascript:void(0)" class="menu-item special-item" @onclick="OpenWheel">
+                <i class="bi bi-gift-fill text-danger"></i> <span>Şans Çarxı</span>
+            </a>
+
+            <div class="menu-label">Sistem</div>
+            <a href="/settings" class="menu-item" @onclick="ToggleMenu">
+                <i class="bi bi-gear text-secondary"></i> <span>Tənzimləmələr</span>
+            </a>
+
+            <button class="logout-btn-sidebar mt-4 border-0">
+                <i class="bi bi-box-arrow-right"></i> <span>Çıxış</span>
+            </button>
+        </nav>
+    </div>
+
+    @* 2. OVERLAY (Qaraltma) *@
+    @if (isMenuOpen)
+    {
+        <div class="sidebar-overlay" @onclick="ToggleMenu"></div>
+    }
+
     <main>
-        <!-- 📱 ÜST MENYU (Navbar) -->
+        <!-- 📱 NAVBAR -->
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark shadow-lg py-3 sticky-top">
             <div class="container px-lg-5">
+
+                @* HAMBURGER DÜYMƏSİ *@
+                <button class="hamburger-btn me-3" @onclick="ToggleMenu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
                 <!-- Logo -->
                 <a class="navbar-brand fw-bold fs-3 d-flex align-items-center" href="/">
                     <span class="me-2">🧸</span> ToyStore
                 </a>
-                
-                <!-- Mobil üçün Burger Menyu -->
-                <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
 
-                <!-- Menyu Linkləri -->
                 <div class="collapse navbar-collapse" id="navbarNav">
-                    
-                    <!-- 🔍 CANLI AXTARIŞ (Navbar-ın ortasında) 🔍 -->
+                    <!-- 🔍 CANLI AXTARIŞ -->
                     <div class="mx-auto position-relative search-box-container my-3 my-lg-0" style="width: 300px;">
                         <div class="input-group input-group-sm bg-white rounded-pill overflow-hidden border-0 shadow-sm">
                             <span class="input-group-text bg-white border-0"><i class="bi bi-search text-muted"></i></span>
-                            <input type="text" class="form-control border-0 shadow-none text-dark" 
-                                   placeholder="Oyuncaq axtar..." 
-                                   @bind="searchText" 
+                            <input type="text" class="form-control border-0 shadow-none text-dark"
+                                   placeholder="Oyuncaq axtar..."
+                                   @bind="searchText"
                                    @oninput="HandleSearchInput" />
                         </div>
 
-                        <!-- Axtarış Dropdown -->
                         @if (searchResults != null && searchResults.Any())
                         {
                             <div class="global-search-dropdown shadow-lg rounded-3 border animate__animated animate__fadeIn">
@@ -58,11 +119,9 @@
                     <div class="navbar-nav ms-auto align-items-center gap-2">
                         <NavLink class="nav-link px-3" href="/" Match="NavLinkMatch.All">Ana Səhifə</NavLink>
                         <NavLink class="nav-link px-3" href="/products">Oyuncaqlar</NavLink>
-                        
-                        <!-- ✅ BRENDLƏR LİNKİ DÜZƏLDİLDİ (/brands) -->
                         <NavLink class="nav-link px-3" href="/brands">Brendlər</NavLink>
 
-                        <!-- ❤️ Sevdiklərim (Wishlist) -->
+                        <!-- ❤️ Wishlist -->
                         <div class="nav-item">
                             <NavLink class="nav-link px-3 position-relative d-flex align-items-center" href="/wishlist">
                                 <i class="bi bi-heart-fill text-danger fs-4"></i>
@@ -75,21 +134,14 @@
                             </NavLink>
                         </div>
 
-                        <!-- 🌙 Gecə/Gündüz Düyməsi -->
+                        <!-- 🌙 Theme Switcher -->
                         <div class="nav-item mx-2">
                             <button class="btn btn-outline-light border-0 rounded-circle p-2 shadow-none" @onclick="ToggleTheme">
-                                @if (ThemeService.IsDarkMode)
-                                {
-                                    <i class="bi bi-sun-fill text-warning fs-4 animate-fade"></i>
-                                }
-                                else
-                                {
-                                    <i class="bi bi-moon-stars-fill text-info fs-4 animate-fade"></i>
-                                }
+                                <i class="bi @(ThemeService.IsDarkMode ? "bi-sun-fill text-warning" : "bi-moon-stars-fill text-info") fs-4"></i>
                             </button>
                         </div>
 
-                        <!-- 🛒 Səbət Düyməsi -->
+                        <!-- 🛒 Cart -->
                         <div class="nav-item ms-lg-2">
                             <NavLink class="btn btn-primary rounded-pill px-4 d-flex align-items-center gap-2 shadow-sm" href="/cart">
                                 <i class="bi bi-cart3 fs-5"></i>
@@ -107,84 +159,55 @@
             </div>
         </nav>
 
-        <!-- 🖼️ SƏHİFƏNİN DAXİLİ KONTENTİ -->
-        <div class="container-fluid py-2">
+        <div class="container-fluid py-4">
             @Body
         </div>
 
         <ChatBot />
 
-        <!-- 🏢 FOOTER -->
+        <SpinWheel @ref="wheelModal" />
+
         <footer class="footer mt-auto py-5 border-top bg-light">
             <div class="container text-center">
-                <div class="mb-3">
-                    <span class="fs-4 fw-bold">ToyStore</span>
-                </div>
+                <span class="fs-4 fw-bold text-dark">ToyStore</span>
                 <p class="text-muted mb-0">&copy; 2024 ToyStore - Bütün hüquqlar qorunur.</p>
             </div>
         </footer>
     </main>
 </div>
 
-<style>
-    /* Axtarış Pəncərəsi Dizaynı */
-    .global-search-dropdown {
-        position: absolute;
-        top: 45px;
-        left: 0;
-        right: 0;
-        background: white;
-        z-index: 2000; /* Məhsul kartlarının üstündə görünsün */
-        max-height: 350px;
-        overflow-y: auto;
-        border-radius: 12px;
-    }
-
-    .search-item-row {
-        display: flex;
-        align-items: center;
-        padding: 10px 15px;
-        cursor: pointer;
-        border-bottom: 1px solid #eee;
-        transition: 0.2s;
-        text-decoration: none;
-    }
-
-    .search-item-row:hover { background: #f8f9fa; }
-
-    .search-item-row img {
-        width: 40px;
-        height: 40px;
-        object-fit: contain;
-        margin-right: 12px;
-        background: white;
-        border-radius: 6px;
-    }
-
-    .nav-link { font-weight: 500; transition: color 0.3s ease; }
-    .nav-link:hover { color: #0d6efd !important; }
-    .animate-fade { animation: fadeIn 0.5s ease; }
-    @@keyframes fadeIn {
-        from { opacity: 0; transform: scale(0.8); }
-        to { opacity: 1; transform: scale(1); }
-    }
-</style>
-
 @code {
+    private bool isMenuOpen = false;
     private string searchText = "";
     private List<ProductDto> allProducts = new();
     private List<ProductDto> searchResults = new();
+    private SpinWheel wheelModal;
+
+    private void ToggleMenu() => isMenuOpen = !isMenuOpen;
+
+    private void OpenWheel()
+    {
+        isMenuOpen = false;
+        wheelModal?.Show();
+    }
 
     protected override async Task OnInitializedAsync()
     {
+        // 🔄 1. BAZADAN USER MƏLUMATLARINI ÇƏKİRİK
+        await UserState.LoadUserProfileAsync();
+
+        // 🔄 2. BÜTÜN SERVİS EVENTLƏRİNƏ ABUNƏ OLURUQ
         CartService.OnCartChanged += RefreshUI;
         ThemeService.OnThemeChanged += RefreshUI;
         WishlistService.OnWishlistChanged += RefreshUI;
+        UserState.OnChange += RefreshUI;
 
-        // API-dan məlumatları çəkirik
-        try {
+        // API-dan məhsulları yükləyirik (Axtarış üçün)
+        try
+        {
             allProducts = await Http.GetFromJsonAsync<List<ProductDto>>("products") ?? new();
-        } catch { }
+        }
+        catch { }
     }
 
     private void HandleSearchInput(ChangeEventArgs e)
@@ -192,31 +215,28 @@
         searchText = e.Value?.ToString() ?? "";
         if (string.IsNullOrWhiteSpace(searchText) || searchText.Length < 2)
         {
-            searchResults = new();
-            return;
+            searchResults = new(); return;
         }
-
         searchResults = allProducts
             .Where(p => p.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
-            .Take(6)
-            .ToList();
+            .Take(6).ToList();
     }
 
     private void SelectProduct(int id)
     {
-        searchResults = new();
-        searchText = "";
+        searchResults = new(); searchText = "";
         NavManager.NavigateTo($"/product/{id}");
     }
 
     private void RefreshUI() => InvokeAsync(StateHasChanged);
-
     private async Task ToggleTheme() => await ThemeService.ToggleTheme();
 
-    void IDisposable.Dispose()
+    public void Dispose()
     {
+        // Event-ləri təmizləyirik (Hafizə sızmasının qarşısını almaq üçün)
         CartService.OnCartChanged -= RefreshUI;
         ThemeService.OnThemeChanged -= RefreshUI;
         WishlistService.OnWishlistChanged -= RefreshUI;
+        UserState.OnChange -= RefreshUI;
     }
 }

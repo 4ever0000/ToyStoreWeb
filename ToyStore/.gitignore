@@ -1,3 +1,16 @@
 .vs/
 bin/
 obj/
+
+.env
+.env.local
+.env.development
+.env.production
+
+*.user
+*.userosscache
+*.sln.docstates
+
+# Əgər appsettings-də şifrə saxlayırsansa bunları da əlavə et:
+# appsettings.json
+# appsettings.Development.json

@@ -15,9 +15,10 @@ builder.Services.AddScoped(sp => new HttpClient
     BaseAddress = new Uri("http://localhost:5289/api/v1/")
 });
 
-// Servislər
-builder.Services.AddSingleton<CartService>();
-builder.Services.AddSingleton<WishlistService>();
-builder.Services.AddSingleton<ThemeService>();
+// ✅ Servislər (Bura UserStateService əlavə olundu)
+builder.Services.AddScoped<CartService>();
+builder.Services.AddScoped<WishlistService>();
+builder.Services.AddScoped<ThemeService>();
+builder.Services.AddScoped<UserStateService>(); 
 
 await builder.Build().RunAsync();

@@ -1,120 +1,127 @@
 @page "/profile"
 @using ToyStore.Frontend.Services
+@using ToyStore.Frontend.Models
 @inject CartService CartService
 @inject NavigationManager NavManager
+@inject HttpClient Http
+@inject UserStateService UserState
+@implements IDisposable
+
+<!-- ✨ TOAST BİLDİRİŞ (Opsional) ✨ -->
+@if (showStatus)
+{
+    <div class="alert alert-success shadow position-fixed bottom-0 end-0 m-4" style="z-index: 9999;">
+        <i class="bi bi-check-circle-fill me-2"></i> @statusMessage
+    </div>
+}
 
 <div class="container mt-5 mb-5">
     <!-- Səhifə Başlığı -->
     <div class="row mb-5">
         <div class="col-md-12">
-            <h1 class="display-5 fw-bold mb-2">👤 Profil</h1>
-            <p class="text-muted lead">Şəxsi məlumatlarınızı yəniləyin</p>
+            <h1 class="display-5 fw-bold mb-2 text-dark">👤 Profil</h1>
+            <p class="text-muted lead">Şəxsi məlumatlarınızı yeniləyin və idarə edin</p>
         </div>
     </div>
 
     <div class="row">
-        <!-- Sol Taraf - Menu -->
+        <!-- Sol Tərəf - Menyu -->
         <div class="col-md-3 mb-4">
-            <div class="card shadow-sm border-0">
+            <div class="card shadow-sm border-0 rounded-4 overflow-hidden">
                 <div class="list-group list-group-flush">
-                    <button class="list-group-item list-group-item-action @(activeTab == "profile" ? "active" : "")" 
+                    <button class="list-group-item list-group-item-action py-3 @(activeTab == "profile" ? "active" : "")"
                             @onclick='() => activeTab = "profile"'>
-                        👤 Profil Məlumatları
+                        <i class="bi bi-person-lines-fill me-2"></i> Profil Məlumatları
                     </button>
-                    <button class="list-group-item list-group-item-action @(activeTab == "address" ? "active" : "")" 
+                    <button class="list-group-item list-group-item-action py-3 @(activeTab == "address" ? "active" : "")"
                             @onclick='() => activeTab = "address"'>
-                        📍 Ünvanlar
+                        <i class="bi bi-geo-alt-fill me-2"></i> Ünvanlar
                     </button>
-                    <button class="list-group-item list-group-item-action @(activeTab == "password" ? "active" : "")" 
+                    <button class="list-group-item list-group-item-action py-3 @(activeTab == "password" ? "active" : "")"
                             @onclick='() => activeTab = "password"'>
-                        🔐 Şifrə Dəyişdir
+                        <i class="bi bi-shield-lock-fill me-2"></i> Şifrə Dəyişdir
                     </button>
-                    <button class="list-group-item list-group-item-action @(activeTab == "notifications" ? "active" : "")" 
+                    <button class="list-group-item list-group-item-action py-3 @(activeTab == "notifications" ? "active" : "")"
                             @onclick='() => activeTab = "notifications"'>
-                        🔔 Bildirimlər
-                    </button>
-                    <button class="list-group-item list-group-item-action @(activeTab == "security" ? "active" : "")" 
-                            @onclick='() => activeTab = "security"'>
-                        🛡️ Səlahiyyət
+                        <i class="bi bi-bell-fill me-2"></i> Bildirimlər
                     </button>
                 </div>
             </div>
         </div>
 
-        <!-- Sağ Taraf - İçerik -->
+        <!-- Sağ Tərəf - İçərik -->
         <div class="col-md-9 mb-4">
-            <!-- Profil Məlumatları -->
+
+            <!-- 1. PROFİL MƏLUMATLARI TAB-I -->
             @if (activeTab == "profile")
             {
-                <div class="card shadow-sm border-0 p-4">
-                    <h4 class="fw-bold mb-4">👤 Profil Məlumatları</h4>
+                <div class="card shadow-sm border-0 p-4 rounded-4 animate__animated animate__fadeIn">
+                    <h4 class="fw-bold mb-4 text-dark">👤 Profil Məlumatları</h4>
 
                     <div class="text-center mb-4">
-                        <img src="https://via.placeholder.com/120x120?text=Avatar" class="rounded-circle shadow" alt="Avatar" />
+                        <img src="images/user-avatar.png" class="rounded-circle shadow border" style="width: 120px; height: 120px; object-fit: cover;" alt="Avatar" />
                         <p class="mt-3">
-                            <a href="#" class="btn btn-sm btn-outline-primary">Avatarı Dəyişdir</a>
+                            <button class="btn btn-sm btn-outline-primary rounded-pill">Avatarı Dəyişdir</button>
                         </p>
                     </div>
 
                     <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Ad</label>
-                            <input type="text" class="form-control" @bind="profile.FirstName" />
-                        </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label fw-bold">Soyad</label>
-                            <input type="text" class="form-control" @bind="profile.LastName" />
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label fw-bold text-dark">Tam Ad (Ad və Soyad)</label>
+                            <input type="text" class="form-control form-control-lg bg-light" @bind="tempName" placeholder="Məs: Aylin Əlizadə" />
                         </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Email</label>
-                        <input type="email" class="form-control" @bind="profile.Email" />
+                        <label class="form-label fw-bold text-dark">Email (Dəyişdirilə bilməz)</label>
+                        <input type="email" class="form-control form-control-lg bg-light opacity-75" value="@UserState.UserEmail" disabled />
                     </div>
 
                     <div class="mb-3">
-                        <label class="form-label fw-bold">Telefon</label>
-                        <input type="tel" class="form-control" @bind="profile.Phone" />
+                        <label class="form-label fw-bold text-dark">Telefon</label>
+                        <input type="tel" class="form-control form-control-lg bg-light" @bind="tempPhone" placeholder="+994 -- --- -- --" />
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Doğum Tarixi</label>
-                        <input type="date" class="form-control" @bind="profile.DateOfBirth" />
+                    <div class="mb-4">
+                        <label class="form-label fw-bold text-dark">Doğum Tarixi</label>
+                        <input type="date" class="form-control form-control-lg bg-light" @bind="tempBirthDate" />
                     </div>
 
-                    <button class="btn btn-primary btn-lg w-100">💾 Dəyişlikləri Saxla</button>
+                    <button class="btn btn-primary btn-lg w-100 rounded-pill fw-bold py-3 shadow" @onclick="SaveChanges">
+                        <i class="bi bi-save-fill me-2"></i> Dəyişiklikləri Saxla
+                    </button>
                 </div>
             }
 
-            <!-- Ünvanlar -->
+            <!-- 2. ÜNVANLAR TAB-I -->
             @if (activeTab == "address")
             {
-                <div class="card shadow-sm border-0 p-4">
+                <div class="card shadow-sm border-0 p-4 rounded-4 animate__animated animate__fadeIn">
                     <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h4 class="fw-bold mb-0">📍 Ünvanlar</h4>
-                        <button class="btn btn-sm btn-success">+ Yeni Ünvan</button>
+                        <h4 class="fw-bold mb-0 text-dark">📍 Ünvanlar</h4>
+                        <button class="btn btn-sm btn-success rounded-pill px-3">+ Yeni Ünvan</button>
                     </div>
 
                     @foreach (var addr in addresses)
                     {
-                        <div class="card mb-3 bg-light">
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between">
+                        <div class="card mb-3 bg-light border-0 rounded-3">
+                            <div class="card-body p-4">
+                                <div class="d-flex justify-content-between align-items-start">
                                     <div>
-                                        <h6 class="fw-bold">@addr.Title</h6>
+                                        <h6 class="fw-bold text-dark">@addr.Title</h6>
                                         <p class="text-secondary mb-0">
-                                            @addr.Address<br/>
+                                            @addr.Address<br />
                                             @addr.City, @addr.PostalCode
                                         </p>
                                     </div>
-                                    <div>
-                                        <button class="btn btn-sm btn-outline-primary">Düzəlt</button>
-                                        <button class="btn btn-sm btn-outline-danger">Sil</button>
+                                    <div class="btn-group">
+                                        <button class="btn btn-sm btn-outline-primary border-0"><i class="bi bi-pencil"></i></button>
+                                        <button class="btn btn-sm btn-outline-danger border-0"><i class="bi bi-trash"></i></button>
                                     </div>
                                 </div>
                                 @if (addr.IsDefault)
                                 {
-                                    <small class="badge bg-primary mt-2">Varsayılan</small>
+                                    <small class="badge bg-primary mt-2 rounded-pill">Əsas Ünvan</small>
                                 }
                             </div>
                         </div>
@@ -122,106 +129,20 @@
                 </div>
             }
 
-            <!-- Şifrə Dəyişdir -->
+            <!-- 3. ŞİFRƏ DƏYİŞDİR TAB-I -->
             @if (activeTab == "password")
             {
-                <div class="card shadow-sm border-0 p-4">
-                    <h4 class="fw-bold mb-4">🔐 Şifrə Dəyişdir</h4>
-
+                <div class="card shadow-sm border-0 p-4 rounded-4 animate__animated animate__fadeIn">
+                    <h4 class="fw-bold mb-4 text-dark">🔐 Şifrə Dəyişdir</h4>
                     <div class="mb-3">
                         <label class="form-label fw-bold">Cari Şifrə</label>
-                        <input type="password" class="form-control" placeholder="Cari şifrənizi girin" />
+                        <input type="password" class="form-control form-control-lg bg-light" placeholder="••••••••" />
                     </div>
-
                     <div class="mb-3">
                         <label class="form-label fw-bold">Yeni Şifrə</label>
-                        <input type="password" class="form-control" placeholder="Yeni şifrə girin" />
+                        <input type="password" class="form-control form-control-lg bg-light" placeholder="••••••••" />
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label fw-bold">Yeni Şifrəni Doğrula</label>
-                        <input type="password" class="form-control" placeholder="Yeni şifrəyi yenidən girin" />
-                    </div>
-
-                    <small class="text-muted d-block mb-3">
-                        Şifrə en az 8 simvol olmalı və harfleri, rəqəmləri içermelidir.
-                    </small>
-
-                    <button class="btn btn-primary btn-lg w-100">🔄 Şifrəni Dəyişdir</button>
-                </div>
-            }
-
-            <!-- Bildirimlər -->
-            @if (activeTab == "notifications")
-            {
-                <div class="card shadow-sm border-0 p-4">
-                    <h4 class="fw-bold mb-4">🔔 Bildirimlər</h4>
-
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="emailNotif" checked />
-                            <label class="form-check-label" for="emailNotif">
-                                <strong>Email Bildirimleri</strong>
-                                <p class="text-muted small">Yeni məhsullar, promosyonlar və xəbərlər hakkında email alın</p>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="smsNotif" checked />
-                            <label class="form-check-label" for="smsNotif">
-                                <strong>SMS Bildirimleri</strong>
-                                <p class="text-muted small">Sifariş güncellemeleri ve önemli uyarılar hakkında SMS alın</p>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div class="mb-3">
-                        <div class="form-check">
-                            <input class="form-check-input" type="checkbox" id="pushNotif" />
-                            <label class="form-check-label" for="pushNotif">
-                                <strong>Push Bildirimleri</strong>
-                                <p class="text-muted small">Tarayıcı bildirimleri alın</p>
-                            </label>
-                        </div>
-                    </div>
-
-                    <button class="btn btn-primary btn-lg w-100">💾 Bildirimleri Saxla</button>
-                </div>
-            }
-
-            <!-- Səlahiyyət -->
-            @if (activeTab == "security")
-            {
-                <div class="card shadow-sm border-0 p-4">
-                    <h4 class="fw-bold mb-4">🛡️ Səlahiyyət</h4>
-
-                    <h6 class="fw-bold mb-3">Aktif Oturumlar</h6>
-                    <div class="card mb-3 bg-light">
-                        <div class="card-body">
-                            <p class="mb-2">
-                                <strong>💻 Windows</strong><br/>
-                                <small class="text-muted">Chrome Browser - Bakı, Azərbaycam</small>
-                            </p>
-                            <small class="text-muted">Son 1 saat əvvəl aktiv</small>
-                            <button class="btn btn-sm btn-outline-danger float-end">Çıx</button>
-                        </div>
-                    </div>
-
-                    <h6 class="fw-bold mb-3 mt-4">İki Faktor Doğrulama</h6>
-                    <div class="alert alert-info">
-                        <p class="mb-2">
-                            <strong>İki Faktor Doğrulaması Hazırlanmadı</strong>
-                        </p>
-                        <p class="text-secondary small">
-                            Əlavə təhlükəsiz olmaq üçün iki faktor doğrulama aktivləşdirin.
-                        </p>
-                        <button class="btn btn-sm btn-success">Aktivləştir</button>
-                    </div>
-
-                    <h6 class="fw-bold mb-3 mt-4">Cihaz Yönetimi</h6>
-                    <button class="btn btn-outline-danger w-100">Bütün Cihazlardan Çıx</button>
+                    <button class="btn btn-primary btn-lg w-100 rounded-pill fw-bold">🔄 Şifrəni Yenilə</button>
                 </div>
             }
         </div>
@@ -229,74 +150,94 @@
 </div>
 
 <style>
-    .list-group-item {
-        border-radius: 0;
-    }
-
     .list-group-item.active {
-        background-color: #667eea;
-        border-color: #667eea;
+        background-color: #0d6efd;
+        border-color: #0d6efd;
     }
 
-    .card {
-        border-radius: 10px;
-        transition: all 0.3s ease;
+    .form-control:focus {
+        background-color: #fff !important;
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.1);
     }
 
-    .card:hover {
-        box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
-    }
-
-    .form-control, .form-select {
-        border-radius: 8px;
-    }
-
-    .form-control:focus, .form-select:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    .rounded-4 {
+        border-radius: 1.2rem !important;
     }
 </style>
 
 @code {
     private string activeTab = "profile";
+    private string tempName;
+    private string tempPhone;
+    private DateTime tempBirthDate = new DateTime(1995, 5, 15);
+    private bool showStatus = false;
+    private string statusMessage = "";
 
-    private ProfileModel profile = new()
+    protected override void OnInitialized()
     {
-        FirstName = "Aylin",
-        LastName = "Əlizadə",
-        Email = "aylin@example.com",
-        Phone = "+994 50 123 4567",
-        DateOfBirth = new DateTime(1995, 5, 15)
-    };
+        // 🔄 Servisdən gələn real məlumatları inputlara bağlayırıq
+        tempName = UserState.UserName;
+        tempPhone = UserState.UserPhone;
 
+        // Sidebar və digər yerlərin yenilənməsi üçün event abunəliyi
+        UserState.OnChange += RefreshUI;
+    }
+
+    private async Task SaveChanges()
+    {
+        // 1. Backend API üçün model hazırlayırıq (Sənin Controller-inə uyğun)
+        var updateModel = new
+        {
+            Id = UserState.UserId,
+            Name = tempName,
+            Phone = tempPhone
+        };
+
+        // 2. API-a PUT sorğusu göndəririk
+        try
+        {
+            var response = await Http.PutAsJsonAsync("users", updateModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                // 3. Əgər Backend uğurla yeniləndisə, Servisi də yeniləyirik
+                // Beləcə Sidebar-dakı ad anında "Namiq M."-dən yeni ada çevriləcək
+                UserState.UpdateState(tempName, tempPhone);
+
+                ShowToast("Dəyişikliklər uğurla yadda saxlanıldı! ✅");
+            }
+            else
+            {
+                ShowToast("Xəta baş verdi, yenidən yoxlayın. ❌");
+            }
+        }
+        catch
+        {
+            ShowToast("Serverlə əlaqə kəsildi. 🌐");
+        }
+    }
+
+    private async void ShowToast(string message)
+    {
+        statusMessage = message;
+        showStatus = true;
+        StateHasChanged();
+        await Task.Delay(3000);
+        showStatus = false;
+        StateHasChanged();
+    }
+
+    private void RefreshUI() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => UserState.OnChange -= RefreshUI;
+
+    // --- Ünvanlar üçün müvəqqəti data ---
     private List<AddressModel> addresses = new()
     {
-        new AddressModel
-        {
-            Title = "Ev",
-            Address = "28 May küçəsi, Apartman 45",
-            City = "Bakı",
-            PostalCode = "AZ1000",
-            IsDefault = true
-        },
-        new AddressModel
-        {
-            Title = "İş",
-            Address = "Azadlıq prospekti, Bina 10",
-            City = "Bakı",
-            PostalCode = "AZ1001",
-            IsDefault = false
-        }
+        new AddressModel { Title = "Ev", Address = "28 May küçəsi, Apartman 45", City = "Bakı", PostalCode = "AZ1000", IsDefault = true },
+        new AddressModel { Title = "İş", Address = "Azadlıq prospekti, Bina 10", City = "Bakı", PostalCode = "AZ1001", IsDefault = false }
     };
-
-    public class ProfileModel
-    {
-        public string FirstName { get; set; }
-        public string LastName { get; set; }
-        public string Email { get; set; }
-        public string Phone { get; set; }
-        public DateTime DateOfBirth { get; set; }
-    }
 
     public class AddressModel
     {

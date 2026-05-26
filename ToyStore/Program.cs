@@ -5,57 +5,66 @@ using System.Text;
 using ToyStore.Data;
 using ToyStore.Middlewares;
 using ToyStore.Repositories;
+using DotNetEnv;
+using Microsoft.OpenApi.Models;
+
+// .env faylını mütləq builder-dən əvvəl yükləyirik
+Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// .env-dən dəyişənləri götürürük
+var connectionString = Environment.GetEnvironmentVariable("DB_CONNECTION");
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY");
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER");
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE");
 
 // 1. API üçün Controller servislərini əlavə edirik
 builder.Services.AddControllers();
 
-// 2. Swagger/OpenAPI tənzimləmələri
+// 2. Swagger Tənzimləmələri
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
-        Type = Microsoft.OpenApi.Models.SecuritySchemeType.Http,
+        Type = SecuritySchemeType.Http,
         Scheme = "Bearer",
         BearerFormat = "JWT",
-        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
-        Description = "Tokeni bura yazın"
+        In = ParameterLocation.Header,
+        Description = "Tokeni bura yazın: Bearer {token}"
     });
 
-    c.AddSecurityRequirement(new Microsoft.OpenApi.Models.OpenApiSecurityRequirement
+    c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
-            new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+            new OpenApiSecurityScheme
             {
-                Reference = new Microsoft.OpenApi.Models.OpenApiReference { Type = Microsoft.OpenApi.Models.ReferenceType.SecurityScheme, Id = "Bearer" }
+                Reference = new OpenApiReference { Type = ReferenceType.SecurityScheme, Id = "Bearer" }
             },
             new string[] {}
         }
     });
 });
 
-// 3. Database (DbContext) qeydiyyatı
-// appsettings.json-dakı "DefaultConnection" (localhost,1434) istifadə olunur
+// 3. Database (DbContext) - Artıq .env-dən gəlir
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString));
 
-// 4. Repository Injection (Sənin aldığın "Unable to resolve service" xətasını bu sətir düzəldir)
+// 4. Repository Injection
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 
-// 5. CORS Siyasəti (Frontend-in API-ya qoşulması üçün mütləqdir)
+// 5. CORS Siyasəti
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        policy.AllowAnyOrigin()   // Bütün ünvanlara icazə ver
-              .AllowAnyMethod()   // Bütün metodlara (GET, POST və s.) icazə ver
-              .AllowAnyHeader();  // Bütün başlıqlara icazə ver
+        policy.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
     });
 });
 
+// 6. JWT Authentication - Artıq .env-dən gəlir
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
     {
@@ -65,39 +74,31 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["Jwt:Issuer"],
-            ValidAudience = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:Key"]))
+            ValidIssuer = jwtIssuer,
+            ValidAudience = jwtAudience,
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey))
         };
     });
 
 var app = builder.Build();
 
-app.UseAuthentication(); // 1. Kim olduğunu yoxla
-
-app.UseAuthorization();  // 2. İcazən varmı yoxla
-// 6. Middleware Sıralaması (BU ARDICILLIQ ÇOX VACİBDİR!)
+// 7. Middleware Sıralaması
 app.UseMiddleware<ExceptionMiddleware>();
-// Swagger hər zaman görünsün (yoxlamaq asan olsun deyə if şərtindən çıxardım)
+
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "ToyStore API v1");
-    c.RoutePrefix = "swagger"; // http://localhost:5289/swagger ünvanında açılır
+    c.RoutePrefix = "swagger";
 });
 
-// Marşrutlaşdırma
 app.UseRouting();
-
-// CORS (Mütləq UseRouting-dən sonra, UseAuthorization-dan əvvəl gəlməlidir)
 app.UseCors("AllowAll");
 
-app.UseAuthorization();
+app.UseAuthentication(); // Kim olduğunu yoxla
+app.UseAuthorization();  // İcazəni yoxla
 
-// Controller-lərin aktiv edilməsi
 app.MapControllers();
-
-// API-ın işləkliyini yoxlamaq üçün ana səhifə linki
-app.MapGet("/", () => "ToyStore API artıq tam hazırdır və işləyir!");
+app.MapGet("/", () => "ToyStore API artıq .env ilə tam təhlükəsiz işləyir!");
 
 app.Run();

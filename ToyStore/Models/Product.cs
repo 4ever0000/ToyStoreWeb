@@ -14,6 +14,12 @@
         public bool Is_active { get; set; }
         public DateTime Created_at { get; set; }
 
+        public int CategoryId { get; set; }
+        public int BrandId { get; set; }
 
+
+        public Category Category { get; set; }
+        public Brand Brand { get; set; }
+        public ICollection<Review> Reviews { get; set; }
     }
 }

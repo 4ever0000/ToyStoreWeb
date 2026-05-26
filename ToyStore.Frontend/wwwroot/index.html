@@ -6,14 +6,14 @@
     <title>ToyStore.Frontend</title>
     <base href="/" />
 
-    <!-- 📱 PWA (Proqram Kimi Yükləmə) Üçün Vacib Sətirlər -->
+    <!-- 📱 PWA Üçün Vacib Sətirlər -->
     <link href="manifest.json" rel="manifest" />
     <link rel="apple-touch-icon" sizes="512x512" href="icon-512.png" />
 
     <link rel="stylesheet" href="lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
 
-    <!-- Animasiyalar Kitabxanası (Daha canlı görünüş üçün) -->
+    <!-- Animasiyalar Kitabxanası -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
 
     <link rel="stylesheet" href="css/app.css" />
@@ -22,7 +22,7 @@
 </head>
 <body>
     <div id="app">
-        <!-- Sayt açılan zaman görünən gözəl yüklənmə ekranı -->
+        <!-- Sayt açılan zaman görünən yüklənmə ekranı -->
         <div class="d-flex flex-column align-items-center justify-content-center" style="height: 100vh;">
             <div class="spinner-grow text-primary" style="width: 3rem; height: 3rem;" role="status"></div>
             <p class="mt-3 fw-bold animate__animated animate__pulse animate__infinite">🧸 ToyStore Dünyası Hazırlanır...</p>
@@ -32,7 +32,7 @@
     <script src="_framework/blazor.webassembly.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- 🎉 Konfeti Animasiyası (Sifariş bitəndə istifadə edəcəyik) -->
+    <!-- 🎉 Konfeti Animasiyası -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
 
     <script>
@@ -41,7 +41,51 @@
             document.documentElement.setAttribute('data-bs-theme', theme);
         };
 
-        // 🛠️ PWA (Service Worker) Qeydiyyatı - Saytın proqram kimi işləməsini təmin edir
+        // 🛒 Səbətə Uçma Animasiyası (Fly-to-Cart)
+        window.flyToCart = (buttonId) => {
+            const btn = document.getElementById(buttonId);
+            const cart = document.querySelector('.btn-primary.rounded-pill'); // Navbar-dakı səbət düyməsi
+
+            if (!btn || !cart) return;
+
+            // Məhsul kartındakı şəkli tapırıq
+            const img = btn.closest('.product-card-modern').querySelector('img');
+            const flyingImg = img.cloneNode();
+
+            const btnRect = img.getBoundingClientRect();
+            const cartRect = cart.getBoundingClientRect();
+
+            Object.assign(flyingImg.style, {
+                position: 'fixed',
+                left: btnRect.left + 'px',
+                top: btnRect.top + 'px',
+                width: btnRect.width + 'px',
+                height: btnRect.height + 'px',
+                transition: 'all 0.8s cubic-bezier(0.42, 0, 0.58, 1)',
+                zIndex: '5000',
+                borderRadius: '50%',
+                opacity: '0.8',
+                pointerEvents: 'none' // Şəkil klikləməyə mane olmasın
+            });
+
+            document.body.appendChild(flyingImg);
+
+            // Animasiyanı başladırıq
+            setTimeout(() => {
+                Object.assign(flyingImg.style, {
+                    left: cartRect.left + 10 + 'px',
+                    top: cartRect.top + 10 + 'px',
+                    width: '20px',
+                    height: '20px',
+                    opacity: '0'
+                });
+            }, 100);
+
+            // Şəkli təmizləyirik
+            setTimeout(() => { flyingImg.remove(); }, 900);
+        };
+
+        // 🛠️ PWA (Service Worker) Qeydiyyatı
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('service-worker.js').then(function (registration) {
                 console.log('PWA xidməti uğurla qeydiyyatdan keçdi:', registration.scope);

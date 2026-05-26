@@ -8,5 +8,8 @@
         public string Password_hash { get; set; }
         public string Phone { get; set; }
         public DateTime Created_at { get; set; }
+
+        public ICollection<Order> Orders { get; set; }
+        public ICollection<Review> Reviews { get; set; }
     }
 }
